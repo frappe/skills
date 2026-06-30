@@ -50,6 +50,19 @@ is not an option"** code.
   *every* row. These must error, not silently operate on the whole table. Flag
   any `set_value`/`delete`/`get_value` where the name/filter could be `None` or
   empty- or attacker-controlled.
+- **Never mutate a list/dict while iterating it.** Removing or adding to a
+  collection mid-loop raises `RuntimeError` or silently skips items — iterate a
+  copy, `reversed()`, or build a new list.
+- **No mutable default arguments.** `def f(items=[])` / `={}` shares one object
+  across every call — use `None` with a guard inside.
+- **Check the types in a condition actually match.** A comparison between
+  mismatched types (string vs `datetime`, string vs int) silently never matches
+  or is always true — cast explicitly (`cint`/`flt`) at the boundary.
+- **Question the return shape.** Before indexing a result, ask whether it can be
+  `None` / `[None, None]`; watch `as_dict=1` (list of dicts) vs scalar confusion.
+- **Don't silently change long-standing semantics.** Behavior callers have relied
+  on for a long time is a contract — altering it is a breaking change in disguise,
+  even when no signature changed.
 
 ## 2. Security
 
@@ -61,6 +74,9 @@ especially hard.
 - NEVER build SQL by string concatenation/f-strings. Use the ORM or query
   builder. If raw SQL is unavoidable, use parameter substitution
   (`frappe.db.sql("... where name = %s", (user,))`) — never interpolate yourself.
+  Better still, **avoid introducing new raw SQL at all**: beyond injection risk it
+  ties code to one database, and the framework aims to stay DB-agnostic (Postgres
+  support). Prefer `frappe.qb`.
 - **Type confusion is an injection vector even with the ORM.** Frappe accepts
   complex types, so a parameter expected to be a string can arrive as a filter
   list: `{"key": ["!=", ""]}` passed to `db.get_value` bypasses a secret-key
@@ -133,6 +149,19 @@ perceive ~100ms).
 - **Memory:** don't stuff junk into shared module-level files / `__init__.py` /
   class-level state — it stays resident forever. Remove unused module-level
   imports (move into the function that uses them). Watch for leaks.
+- **Reorder conditionals so the DB call is last.** In a boolean expression, put
+  cheap in-memory checks first so short-circuiting can skip the query entirely.
+- **Aggregate in SQL, not Python.** Use `SUM()`/`COUNT()` in the query instead of
+  fetching all rows to reduce them in memory; push filters into the subquery so
+  they apply *before* the join.
+- **Don't fetch a whole doc for one value.** Use `get_value`/`get_single_value`/
+  `set_value` for a single column instead of `get_doc().save()`; use
+  `frappe.delete_doc` instead of `get_doc().delete()` (which fetches the doc only
+  to delete it).
+- **No MyISAM tables in hot paths.** Reading a MyISAM table takes an implicit
+  table-level lock — never touch one in a request path.
+- **Move long work to a background queue.** Long-running work belongs in
+  `enqueue(..., queue="long")`, not a synchronous request that blocks a worker.
 
 ## 4. Concurrency
 
@@ -174,6 +203,12 @@ perceive ~100ms).
 - Docstrings should only mention important things. Keep them short and to the
   point. Don't explain what's trivially understood from function name. Focus on
   "why".
+- **Guard clauses over nesting.** Prefer early-return guards to over-indented
+  if-else soup; merge nested `if`s.
+- **Delete dead code.** Commented-out code never gets merged — git history
+  already keeps it.
+- **Split unrelated changes** into separate commits/PRs — keeps review focused
+  and `git blame`/reverts clean.
 
 ## 6. API design & backward compatibility
 
@@ -195,6 +230,20 @@ perceive ~100ms).
 - **Watch for schema breaking-change footguns:** adding mandatory fields to
   existing sites, making long-lived fields unique (needs a data patch), changing
   field types without patches, removing fields.
+- **Schema changes that silently skip existing sites need a data patch.** Single
+  doctypes don't sync new-field defaults to existing sites, and a field-type
+  change (e.g. text→int) doesn't convert existing values — both need an explicit
+  patch, tested against a populated site.
+- **New parameters go last as keyword args with safe defaults** (`None`, not
+  `""`) so existing positional callers don't break. When renaming, keep the old
+  name as a shim: `def old_name(...): return new_name(...)`.
+- **Patch hygiene.** Data patches must be **idempotent** (safe to re-run),
+  **correctly ordered** (run after the field/doctype they read exists), and live
+  in the **right app** (a framework change is patched in the framework, not the
+  downstream app).
+- **A modified existing test is a red flag.** If making a change pass required
+  editing an existing test's assertions, you've likely broken a real workflow —
+  justify it explicitly rather than bending the test.
 
 ## 7. Testing
 
@@ -208,6 +257,9 @@ perceive ~100ms).
   are the highest-risk, least-tested area; a change that alters fields or
   migrates data needs a patch tested against a realistic, populated site (empty
   tables always "migrate" successfully even when the change is invalid).
+- **Tests must be deterministic and independent.** No `random` (flaky); no
+  reliance on state left by other tests (order-dependence); use `freeze_time`
+  for time-dependent logic.
 
 ## 8. Error messages, logging & observability
 
