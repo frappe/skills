@@ -30,7 +30,7 @@ One or two sentences maximum. Name the vulnerability class and the minimum privi
 
 ### Vulnerability details
 
-Describe the root cause precisely: what input is accepted, how it flows to the sink, and what safety control is absent or broken. Reference the relevant file path and function name. Include a short code snippet only if it materially aids understanding. This section should be 3–6 sentences.
+Describe the root cause precisely: what kind of input is accepted, how it reaches the vulnerable operation, and what safety control is absent or broken. Keep this at the mechanism level — name the vulnerability class and the missing control, but do not cite specific file paths, function names, field names, or endpoints, and avoid code snippets, so the advisory does not reveal the patched code path. This section should be 3–6 sentences.
 
 ### Impact
 
