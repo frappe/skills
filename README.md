@@ -9,7 +9,7 @@ A collection of agent skills for building [Frappe Framework](https://frappeframe
 | `frappe-app-dev` | Full-stack Frappe: DocTypes, controllers, APIs, database/ORM, hooks, permissions, jobs, realtime, caching, testing, app setup, frontend (Desk/Vue/portal), and the bench CLI + site management |
 | `code-style`     | General code style rules                                                                                                                                                                       |
 | `ui-design`      | General UI/UX design principles                                                                                                                                                                |
-| `ghsa`           | Write a publication-ready GitHub Security Advisory (GHSA) from a vulnerability report — title, summary, details, impact, CVSS, CWE, and PoC                                                     |
+| `draft-security-advisory` | Write a publication-ready GitHub Security Advisory (GHSA) from a vulnerability report — title, summary, details, impact, CVSS, CWE, and PoC. User-invoked only: run `/draft-security-advisory` |
 
 ## Install
 

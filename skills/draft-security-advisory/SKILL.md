@@ -1,6 +1,7 @@
 ---
-name: ghsa
-description: Write a complete, publication-ready GitHub Security Advisory (GHSA) from a vulnerability report. Use when the user provides a vulnerability report or asks to draft/write a security advisory, GHSA, or CVE-style writeup — producing the title, summary, vulnerability details, impact, CVSS vector and score, CWE, and proof of concept. Deliberately withholds details (functions, files, fields) that would reveal the patched code path.
+name: draft-security-advisory
+description: Write a complete, publication-ready GitHub Security Advisory (GHSA) from a vulnerability report — title, summary, vulnerability details, impact, CVSS vector and score, CWE, and proof of concept. Deliberately withholds details (functions, files, fields) that would reveal the patched code path. Invoke with /draft-security-advisory and the vulnerability report.
+disable-model-invocation: true
 ---
 
 # GitHub Security Advisory Writer
