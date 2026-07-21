@@ -19,7 +19,7 @@ Pick the established pattern that fits; when an earlier advisory for the same pr
 - Injection flaws: `Possibility of {class} due to missing validation`
 - Authorization flaws: `Unauthorised {action} due to missing validation` (British spelling)
 - Outcome-led: `{Outcome} via {class}` — e.g. `Account takeover via Reflected XSS`
-- Feature-scoped: `{Class} in {feature area}` — e.g. `Stored XSS in Dashboards, Tools and Portals`
+- Feature-scoped: `{Class} in {feature area}` — a last resort, only when none of the patterns above fit; never to make a title unique, since identical titles across advisories are fine. Generalize the feature area so the exact feature stays unrevealed: name an umbrella surface one level broader than where the flaw sits (e.g. "portal pages", not the specific portal), never a module, screen, or record type.
 
 ## Advisory body
 
@@ -46,7 +46,7 @@ For other classes, write the sentence in the same register: "{Class} through {va
 After the body, list the values for GitHub's advisory form:
 
 - **Ecosystem / package:** the project's ecosystem and package name
-- **Affected / patched versions:** one row per supported release stream (currently v15 and v16) — affected `< {first fixed release}`, patched `{first fixed release}`
+- **Affected / patched versions:** one row per currently supported release stream — ask the user which streams are supported if not stated in the report; affected `< {first fixed release}`, patched `{first fixed release}`
 - **CVSS:** v3.1 vector and score, derived from the rules below, with a one-sentence rationale for each non-obvious metric choice (PR, S, C, I)
 - **Severity:** the band the score falls in
 - **CWE:** the most specific id available
