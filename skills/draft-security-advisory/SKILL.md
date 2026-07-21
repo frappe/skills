@@ -6,62 +6,53 @@ disable-model-invocation: true
 
 # GitHub Security Advisory Writer
 
-Turn the vulnerability report the user provides into a complete, publication-ready GitHub Security Advisory (GHSA).
+Turn the vulnerability report the user provides into a publication-ready GitHub Security Advisory (GHSA): a terse two-section body, with the precision carried by GitHub's structured form fields.
 
 ## Class, not instance
 
-The advisory speaks at the level of the vulnerability **class**: the flaw class (SSTI, SQL injection, IDOR), the broken or missing control, the product or high-level feature area, the risk category. Everything at the level of the **instance** — function names, file paths, field names, endpoints, configuration keys, code snippets, copy-paste payloads — stays out, so a reader can never work backwards from the advisory to the patched code path. This rule binds the title and every section below.
+The advisory speaks at the level of the vulnerability **class**: the flaw class (SQL injection, SSTI, missing authorization), the broken or missing control, the feature area, the risk category. Everything at the level of the **instance** — function names, file paths, field names, endpoints, configuration keys, code snippets, payloads — stays out, so a reader can never work backwards from the advisory to the patched code path. A published advisory locates a flaw no more precisely than "certain endpoints", "a configuration field", "a certain page", "names of a few records" — match that register.
 
-## Output format
+## Title
 
-First output:
+Pick the established pattern that fits; when an earlier advisory for the same project covered the same class, reuse its title verbatim — repeated titles are house style, not a defect:
 
-**Suggested title:** `{Vulnerability class} in {product or component} allows {attacker gain, 5 words or fewer}`
+- Injection flaws: `Possibility of {class} due to missing validation`
+- Authorization flaws: `Unauthorised {action} due to missing validation` (British spelling)
+- Outcome-led: `{Outcome} via {class}` — e.g. `Account takeover via Reflected XSS`
+- Feature-scoped: `{Class} in {feature area}` — e.g. `Stored XSS in Dashboards, Tools and Portals`
 
-The closing phrase names what the attacker gains ("allows unauthorized data disclosure"), never what was broken or fixed. Example: `Server-Side Template Injection in ERPNext allows unauthorized data disclosure`.
+## Advisory body
 
-Then the advisory as a single markdown document:
+Exactly two sections:
 
----
-
-## [GHSA-XXXX-XXXX-XXXX] — {same title}
-
-**Package:** {ecosystem}/{package-name}
-**Affected versions:** {range, e.g. `>= 14.0.0, < 14.62.4`}
-**Patched versions:** {version, or "Not yet patched"}
-**Severity:** {from the severity bands below}
-
-### Summary
-
-One or two sentences for a developer scanning their dependency feed: the vulnerability class and the minimum privilege level required to exploit it.
-
-### Vulnerability details
-
-3–6 sentences at the mechanism level: what kind of input is accepted, how it reaches the vulnerable operation, and which safety control is absent or broken.
-
+```markdown
 ### Impact
+{One or two sentences: where the flaw sits, at class level; what control
+was missing; what the attacker gains and the minimum privilege needed.}
 
-One to three sentences naming the risk category — "unauthorized data disclosure", "privilege escalation". Bound what is NOT achievable when that significantly changes the risk profile.
+### Workarounds
+No workaround available; upgrading is required.
+```
 
-### CVSS
+Reuse the stock Impact sentence when the class has one:
 
-**Vector:** `CVSS:3.1/AV:?/AC:?/PR:?/UI:?/S:?/C:?/I:?/A:?`
-**Score:** X.X (Severity)
+- SQL injection: "Some endpoints were vulnerable to SQL injection through specially crafted requests, which would allow a malicious actor to extract sensitive information."
+- Missing authorization: "Certain endpoints failed to enforce proper authorization checks, allowing users to modify data beyond their permitted role."
 
-One-sentence rationale for each non-obvious metric choice (PR, S, C, I).
+For other classes, write the sentence in the same register: "{Class} through {vague vector} allows {an authenticated user / a malicious user} to {capability}." Amend the Workarounds line only when a real workaround exists.
 
-### CWE
+## Form fields
 
-**Primary:** CWE-XXXX — {name}
-**Secondary (if applicable):** CWE-XXXX — {name}
+After the body, list the values for GitHub's advisory form:
 
-One sentence on why the primary CWE applies.
+- **Ecosystem / package:** the project's ecosystem and package name
+- **Affected / patched versions:** one row per supported release stream (currently v15 and v16) — affected `< {first fixed release}`, patched `{first fixed release}`
+- **CVSS:** v3.1 vector and score, derived from the rules below, with a one-sentence rationale for each non-obvious metric choice (PR, S, C, I)
+- **Severity:** the band the score falls in
+- **CWE:** the most specific id available
+- **Credits:** reporter(s) from the report as *reporter*; whoever authored the fix as *remediation developer*
 
-### Proof of concept
-
-Plain-text reproduction steps. Describe payloads and any PoC videos or write-ups in prose rather than reproducing them, so nothing is copy-paste runnable against a live system.
-
----
+That is the whole advisory: the body carries no summary, no root-cause walkthrough, and no proof of concept, and the CVE field stays empty — GitHub assigns one after publication. The report's PoC informs the CVSS metrics only.
 
 ## Derivation rules
 
@@ -83,11 +74,15 @@ Plain-text reproduction steps. Describe payloads and any PoC videos or write-ups
 - Missing authorization → CWE-862
 - Improper input validation → CWE-20
 - Code injection (generic) → CWE-94
+- Path traversal → CWE-22
+- XSS → CWE-79
+- SSRF → CWE-918
+- XXE → CWE-611
 
 **Severity bands** from the CVSS base score: 9.0–10.0 Critical · 7.0–8.9 High · 4.0–6.9 Medium · 0.1–3.9 Low.
 
-If the report supplies its own CVSS or CWE, validate it; where your analysis disagrees, use your analysis and note the discrepancy in one sentence. CVE IDs are the CNA's to assign — the advisory carries none.
+If the report supplies its own CVSS or CWE, validate it; where your analysis disagrees, use your analysis and note the discrepancy in one sentence.
 
 ## Final check
 
-The advisory is complete when every section above is present, the CVSS score falls in the stated severity band, and a re-read of the title, Summary, Vulnerability details, and Impact finds zero instance-level identifiers.
+The advisory is complete when the body is exactly Impact + Workarounds, every form field above has a value, the CVSS score falls in the stated severity band, and a re-read of the title and Impact finds zero instance-level identifiers.
