@@ -80,7 +80,7 @@ If the repository has a linter or a formatter, run it on the files you changed. 
 ### 6. Commit and push
 
 ```bash
-git add -A
+git add <modified files>
 git commit -m "chore: resolve conflict"
 git push <remote> HEAD:<headRefName>
 ```
