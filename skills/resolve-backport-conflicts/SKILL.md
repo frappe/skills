@@ -87,7 +87,17 @@ git push <remote> HEAD:<headRefName>
 
 To choose the remote, match `headRepositoryOwner` from step 1 against the output of `git remote -v`. A Mergify branch lives on the upstream repository, not on a fork. Never force-push.
 
-### 7. Summarize
+### 7. Remove the `conflicts` label
+
+Mergify adds a `conflicts` label when the cherry-pick fails. The label stays until someone removes it. After the push succeeds, and only if no marker remains, remove it:
+
+```bash
+gh pr edit <pr-url> --remove-label conflicts
+```
+
+The command fails if the pull request does not carry the label. That failure is harmless. If you could not resolve every conflict, leave the label in place.
+
+### 8. Summarize
 
 Report these points to the user:
 
