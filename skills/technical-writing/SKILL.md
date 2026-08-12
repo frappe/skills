@@ -1,6 +1,7 @@
 ---
 name: technical-writing
 description: 'Write prose in "Simplified Technical English". This applies to documentation, READMEs, commits, pull request, plans and release notes. It does not apply to code, identifiers, marketing copy, essays, or anything that needs a voice.'
+disable-model-invocation: true
 ---
 
 ## Rules
