@@ -4,7 +4,7 @@ DocTypes are the core data model in Frappe. Each DocType becomes a database tabl
 
 ## Creating a DocType
 
-Write the JSON definition file and let `pilot --site <site> migrate` create the folder structure. Do NOT `mkdir` DocType directories.
+Write the JSON definition file and let the selected manager migrate the site. Do NOT `mkdir` DocType directories.
 
 File path: `apps/<app>/<app>/<module>/doctype/<doctype_name>/<doctype_name>.json`
 
@@ -101,7 +101,11 @@ A child DocType needs no permissions. It inherits them from the parent.
 
 Always run:
 ```bash
+# Pilot
 pilot --site <site> migrate
+
+# Bench
+bench --site <site> migrate
 ```
 
 ## Other useful JSON keys

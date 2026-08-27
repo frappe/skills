@@ -14,25 +14,45 @@ Convention: site name often contains the app name (e.g. `gameplan.localhost` for
 
 To confirm which apps are on a site:
 ```bash
+# Pilot
 pilot list-site-apps <site>
+
+# Bench
+bench --site <site> list-apps
 ```
 
 If multiple sites exist, check each until you find the one with the target app installed.
 
 ## Creating a new site
 
-Pilot reads the configured database credentials. Create the site with:
+Pilot reads the configured database credentials:
 
 ```bash
 pilot new-site <name>.localhost --admin-password admin
+```
+
+For Bench, first check `root_password` in `sites/common_site_config.json`. If it is missing, set it once:
+
+```bash
+bench set-config -g root_password '<pwd>'
+```
+
+Then create the site. You can also pass the root password without storing it:
+
+```bash
+# If root_password is in common_site_config.json
+bench new-site <name>.localhost --admin-password admin
+
+# Otherwise, pass it explicitly
+bench new-site <name>.localhost --db-root-password '<pwd>' --admin-password admin
 ```
 
 Naming convention: `<app-name>.localhost` (e.g. `expense_tracker.localhost`).
 
 ## Other site commands
 
-See [pilot-operations.md](./pilot-operations.md). Ask the user before you drop a site.
+See [pilot-operations.md](./pilot-operations.md) or [bench-operations.md](./bench-operations.md). Ask the user before you drop a site.
 
 ## Site config
 
-Per-site config lives in `sites/<site>/site_config.json`. Pilot bench config lives in `bench.toml`. Shared Frappe config lives in `sites/common_site_config.json`.
+Per-site config lives in `sites/<site>/site_config.json`. Pilot config lives in `bench.toml`. Shared Frappe config lives in `sites/common_site_config.json`.

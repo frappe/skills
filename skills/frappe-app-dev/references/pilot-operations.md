@@ -1,6 +1,6 @@
 # Pilot CLI Reference
 
-Run these commands from a Pilot bench directory or one of its descendants. The bench root contains `bench.toml`, `apps/`, and `sites/`.
+Use these commands only when the bench root contains `bench.toml`. Run them from that directory or one of its descendants.
 
 From outside the bench, add `-b <bench>` after `pilot`. Pilot passes unknown Frappe commands through to the Frappe CLI.
 
