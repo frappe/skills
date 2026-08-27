@@ -1,14 +1,20 @@
 # Pilot CLI Reference
 
-Use these commands only when the bench root contains `bench.toml`. Run them from that directory or one of its descendants.
+Use these commands only when the bench root contains `bench.toml`. Read `<bench>` from `[bench].name` in that file.
 
-From outside the bench, add `-b <bench>` after `pilot`. Pilot passes unknown Frappe commands through to the Frappe CLI.
+Always pass `-b <bench>`. Do not rely on the current directory or single-bench inference.
+
+Pilot commands are not one-for-one Bench replacements. Use native Pilot commands where this reference lists them.
+
+For Frappe commands, use the explicit `pilot -b <bench> frappe ...` passthrough form.
+
+Do not use passthrough for `new-site`, `install-app`, or `uninstall-app`. Pilot must update `bench.toml` for these operations.
 
 ## App and site lifecycle
 
 ```bash
 # New app
-pilot new-app <app-name> \
+pilot -b <bench> new-app <app-name> \
   --title '<title>' \
   --description '<description>' \
   --publisher '<publisher>' \
@@ -16,81 +22,83 @@ pilot new-app <app-name> \
   --license '<license>'
 
 # New site
-pilot new-site <name>.localhost --admin-password admin
+pilot -b <bench> new-site <name>.localhost --admin-password admin
 
 # Install or uninstall an app
-pilot install-app <site> <app-name>
-pilot uninstall-app <site> <app-name>
+pilot -b <bench> install-app <site> <app-name>
+pilot -b <bench> uninstall-app <site> <app-name>
 
 # List apps on a site
-pilot list-site-apps <site>
+pilot -b <bench> list-site-apps <site>
 
-# Migrate a site
-pilot --site <site> migrate
+# Migrate a site through Frappe
+pilot -b <bench> frappe --site <site> migrate
 
-# Set the default site
-pilot use <site>
+# Set the default site through Frappe
+pilot -b <bench> frappe use <site>
 ```
 
 ## Development
 
 ```bash
 # Start development processes in the background
-pilot start
+pilot -b <bench> start
 
-# Enable developer mode
-pilot set-config -g developer_mode 1
+# Enable developer mode through Frappe
+pilot -b <bench> frappe set-config -g developer_mode 1
 
-# Open a Python console with site context
-pilot --site <site> console
+# Open a Python console through Frappe
+pilot -b <bench> frappe --site <site> console
 
-# Execute a Python function
-pilot --site <site> execute frappe.utils.get_url
+# Execute a Python function through Frappe
+pilot -b <bench> frappe --site <site> execute frappe.utils.get_url
 
-# Execute a function with arguments
-pilot --site <site> execute path.to.function arg1 arg2 --kwarg1 hello
+# Execute a function with arguments through Frappe
+pilot -b <bench> frappe --site <site> execute path.to.function arg1 arg2 --kwarg1 hello
 
-# Run tests
-pilot --site <site> run-tests --app <app-name>
-pilot --site <site> run-tests --doctype "DocType Name"
+# Run tests through Frappe
+pilot -b <bench> frappe --site <site> run-tests --app <app-name>
+pilot -b <bench> frappe --site <site> run-tests --doctype "DocType Name"
 
-# Build frontend assets
-pilot build --apps <app-name> --force
+# Build frontend assets with Pilot
+pilot -b <bench> build --apps <app-name> --force
+
+# Watch frontend assets through Frappe
+pilot -b <bench> frappe watch
 ```
 
-`pilot start` runs the Frappe asset watcher for development benches.
+`pilot -b <bench> start` runs the Frappe asset watcher for development benches.
 
-`pilot uninstall-app` drops the app data. It also removes the app from the bench when no other site uses it.
+`pilot -b <bench> uninstall-app` drops the app data. It removes the app when no other site uses it.
 
 ## Site maintenance
 
 ```bash
 # Backup
-pilot --site <site> backup
+pilot -b <bench> frappe --site <site> backup
 
 # Restore
-pilot --site <site> restore <path>
+pilot -b <bench> frappe --site <site> restore <path>
 
 # Clear cache
-pilot --site <site> clear-cache
-pilot --site <site> clear-website-cache
+pilot -b <bench> frappe --site <site> clear-cache
+pilot -b <bench> frappe --site <site> clear-website-cache
 
 # Set site config
-pilot --site <site> set-config <key> <value>
+pilot -b <bench> frappe --site <site> set-config <key> <value>
 
 # Set shared Frappe config
-pilot set-config -g <key> <value>
+pilot -b <bench> frappe set-config -g <key> <value>
 
 # Open a MariaDB console for debugging
-pilot --site <site> mariadb
-
-# Drop a site (DESTRUCTIVE)
-pilot drop-site <site> --db-root-password '<pwd>'
+pilot -b <bench> frappe --site <site> mariadb
 ```
+
+Pilot has no native site-drop CLI command. Use Pilot Admin to drop a site so Pilot also updates `bench.toml`.
 
 ## Fixtures
 
 ```bash
 # Export fixtures defined in hooks.py
-pilot --site <site> export-fixtures --app <app-name>
+pilot -b <bench> frappe --site <site> export-fixtures --app <app-name>
 ```

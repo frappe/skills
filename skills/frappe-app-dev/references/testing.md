@@ -66,8 +66,8 @@ Convention: if the dev site is `expense.localhost`, create `expense-test.localho
 For Pilot:
 
 ```bash
-pilot new-site expense-test.localhost --admin-password admin
-pilot install-app expense-test.localhost <app-name>
+pilot -b <bench> new-site expense-test.localhost --admin-password admin
+pilot -b <bench> install-app expense-test.localhost <app-name>
 ```
 
 For Bench:
@@ -81,7 +81,7 @@ Always run tests against the test site:
 
 ```bash
 # Pilot
-pilot --site expense-test.localhost run-tests --app <app-name>
+pilot -b <bench> frappe --site expense-test.localhost run-tests --app <app-name>
 
 # Bench
 bench --site expense-test.localhost run-tests --app <app-name>
@@ -93,16 +93,16 @@ With Pilot:
 
 ```bash
 # All tests for an app
-pilot --site <site> run-tests --app <app-name>
+pilot -b <bench> frappe --site <site> run-tests --app <app-name>
 
 # Specific DocType
-pilot --site <site> run-tests --doctype "Expense"
+pilot -b <bench> frappe --site <site> run-tests --doctype "Expense"
 
 # Specific test file
-pilot --site <site> run-tests --module <app>.<module>.doctype.<doctype>.test_<doctype>
+pilot -b <bench> frappe --site <site> run-tests --module <app>.<module>.doctype.<doctype>.test_<doctype>
 
 # Specific test method
-pilot --site <site> run-tests --module <app>.<module>.doctype.<doctype>.test_<doctype> --test test_expense_creation
+pilot -b <bench> frappe --site <site> run-tests --module <app>.<module>.doctype.<doctype>.test_<doctype> --test test_expense_creation
 ```
 
 With Bench:

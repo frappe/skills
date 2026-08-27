@@ -8,7 +8,7 @@ description: >-
   background jobs or scheduled tasks, managing permissions or roles, writing
   Frappe tests, or working with frappe.db / frappe.qb. Also applies when the
   user says things like "how do I hook into save", "add a field to a DocType",
-  "create a REST endpoint in Frappe", "run bench migrate", "run pilot migrate",
+  "create a REST endpoint in Frappe", "run bench migrate", "run a Pilot site migration",
   or "install an app on a site" — even if they don't explicitly say "Frappe".
 ---
 
@@ -22,10 +22,16 @@ description: >-
 - Otherwise, if `Procfile`, `apps/`, and `sites/` exist, use Bench.
 - If both markers exist and the user gave no choice, prefer Pilot.
 - Run only the command form for the selected manager.
+- For Pilot, read the bench name from `[bench].name` in `bench.toml`.
 
 ## Global Rules
 
 - Use bare `pilot` or `bench`. Do not use a full path.
+- Always pass `-b <bench>` to Pilot commands that operate on a bench.
+- Do not rely on the current directory or single-bench inference for Pilot.
+- Use native Pilot commands when available. Use `pilot -b <bench> frappe ...` for Frappe commands.
+- Never run `pilot --site ...`. Use `pilot -b <bench> frappe --site ...`.
+- Do not pass app or site lifecycle commands through Frappe when Pilot has a native command.
 - Do not run CLI discovery commands or check the Frappe version.
 - Do not delegate manager detection to a subagent. Inspect `bench.toml`, `Procfile`, `apps/`, and `sites/` yourself.
 - Do not create DocType folders with `mkdir`. Let the selected manager run the site migration.

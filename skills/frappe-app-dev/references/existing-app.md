@@ -15,7 +15,7 @@ If the workspace is inside the app (e.g. user opened `apps/myapp/`), go up:
 ls ../../apps/ ../../sites/
 ```
 
-Use Pilot if `bench.toml` exists. Otherwise, use Bench if `Procfile` exists.
+Use Pilot if `bench.toml` exists. Read `<bench>` from `[bench].name`. Otherwise, use Bench if `Procfile` exists.
 
 ## Step 2: Locate the app
 
@@ -33,7 +33,7 @@ Each subdirectory under the module is a Frappe module (contains DocTypes, etc.):
 ls apps/<app-name>/<app-name>/<module-name>/
 ```
 
-Do NOT create a second app. Do NOT run `pilot new-app` or `bench new-app`.
+Do NOT create a second app with either manager.
 
 ## Step 3: Confirm site and app installation
 
@@ -42,7 +42,7 @@ See [site-management.md](./site-management.md) for finding the right site for th
 Verify the app is installed:
 ```bash
 # Pilot
-pilot list-site-apps <site>
+pilot -b <bench> list-site-apps <site>
 
 # Bench
 bench --site <site> list-apps
@@ -51,7 +51,7 @@ bench --site <site> list-apps
 If not installed:
 ```bash
 # Pilot
-pilot install-app <site> <app-name>
+pilot -b <bench> install-app <site> <app-name>
 
 # Bench
 bench --site <site> install-app <app-name>
@@ -61,7 +61,7 @@ bench --site <site> install-app <app-name>
 
 ```bash
 # Pilot
-pilot set-config -g developer_mode 1
+pilot -b <bench> frappe set-config -g developer_mode 1
 
 # Bench
 bench set-config -g developer_mode 1
@@ -80,7 +80,7 @@ Key files to read first:
 
 ```bash
 # Pilot
-pilot --site <site> migrate
+pilot -b <bench> frappe --site <site> migrate
 
 # Bench
 bench --site <site> migrate

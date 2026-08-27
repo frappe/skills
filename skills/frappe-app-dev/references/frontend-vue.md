@@ -89,7 +89,7 @@ yarn build          # outputs to apps/<app>/<app>/public/frontend
 Or via the selected manager:
 ```bash
 # Pilot
-pilot build --apps <app-name> --force
+pilot -b <bench> build --apps <app-name> --force
 
 # Bench
 bench build --app <app-name>

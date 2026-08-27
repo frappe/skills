@@ -8,13 +8,13 @@ Follow these steps in order.
 ls apps/ sites/
 ```
 
-Use Pilot if `bench.toml` exists. Otherwise, use Bench if `Procfile` exists.
+Use Pilot if `bench.toml` exists. Read `<bench>` from `[bench].name`. Otherwise, use Bench if `Procfile` exists.
 
 ## Step 2: Enable developer mode
 
 ```bash
 # Pilot
-pilot set-config -g developer_mode 1
+pilot -b <bench> frappe set-config -g developer_mode 1
 
 # Bench
 bench set-config -g developer_mode 1
@@ -31,7 +31,7 @@ Ask user for: app name, title, description, publisher, email, license.
 For Pilot:
 
 ```bash
-pilot new-app <app-name> \
+pilot -b <bench> new-app <app-name> \
   --title '<title>' \
   --description '<description>' \
   --publisher '<publisher>' \
@@ -42,7 +42,7 @@ pilot new-app <app-name> \
 Example:
 
 ```bash
-pilot new-app expense_tracker \
+pilot -b <bench> new-app expense_tracker \
   --title 'Expense Tracker' \
   --description 'Track expenses' \
   --publisher 'John' \
@@ -66,7 +66,7 @@ printf 'Expense Tracker\nTrack expenses\nJohn\njohn@example.com\nmit\nN\nN\nN\n'
 
 ```bash
 # Pilot
-pilot install-app <site> <app-name>
+pilot -b <bench> install-app <site> <app-name>
 
 # Bench
 bench --site <site> install-app <app-name>
@@ -93,7 +93,7 @@ Load the relevant feature references from the main SKILL.md table as needed.
 
 ```bash
 # Pilot
-pilot --site <site> migrate
+pilot -b <bench> frappe --site <site> migrate
 
 # Bench
 bench --site <site> migrate
@@ -105,7 +105,7 @@ bench --site <site> migrate
 Start development processes in the background if they are not already running:
 ```bash
 # Pilot
-pilot start
+pilot -b <bench> start
 
 # Bench
 bench start
@@ -114,7 +114,7 @@ bench start
 Get URL:
 ```bash
 # Pilot
-pilot --site <site> execute frappe.utils.get_url
+pilot -b <bench> frappe --site <site> execute frappe.utils.get_url
 
 # Bench
 bench --site <site> execute frappe.utils.get_url

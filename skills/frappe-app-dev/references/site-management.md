@@ -15,7 +15,7 @@ Convention: site name often contains the app name (e.g. `gameplan.localhost` for
 To confirm which apps are on a site:
 ```bash
 # Pilot
-pilot list-site-apps <site>
+pilot -b <bench> list-site-apps <site>
 
 # Bench
 bench --site <site> list-apps
@@ -28,7 +28,7 @@ If multiple sites exist, check each until you find the one with the target app i
 Pilot reads the configured database credentials:
 
 ```bash
-pilot new-site <name>.localhost --admin-password admin
+pilot -b <bench> new-site <name>.localhost --admin-password admin
 ```
 
 For Bench, first check `root_password` in `sites/common_site_config.json`. If it is missing, set it once:
@@ -51,7 +51,7 @@ Naming convention: `<app-name>.localhost` (e.g. `expense_tracker.localhost`).
 
 ## Other site commands
 
-See [pilot-operations.md](./pilot-operations.md) or [bench-operations.md](./bench-operations.md). Ask the user before you drop a site.
+See [pilot-operations.md](./pilot-operations.md) or [bench-operations.md](./bench-operations.md). Ask the user before you drop a site. For Pilot, use Pilot Admin instead of Frappe passthrough.
 
 ## Site config
 

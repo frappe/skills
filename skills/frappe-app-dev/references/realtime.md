@@ -70,6 +70,6 @@ socket.emit("doc_unsubscribe", "Expense", "EXP-0001");
 socket.disconnect();
 ```
 
-Port 9000 is the default Socket.IO port in Frappe development. Use `pilot start` or `bench start`.
+Port 9000 is the default Socket.IO port in Frappe development. Use `pilot -b <bench> start` or `bench start`.
 
 Use `after_commit=True` for events triggered during document saves. Site-wide broadcasts reach Desk users only, not guests or portal users.
