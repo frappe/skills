@@ -2,17 +2,17 @@
 
 Follow these steps in order.
 
-## Step 1: Confirm bench root
+## Step 1: Confirm Pilot bench root
 
 ```bash
-ls apps/ sites/ Procfile
+ls bench.toml apps/ sites/
 ```
-If it succeeds, bench is valid. Do not run anything else to verify.
+If it succeeds, the Pilot bench is valid. Do not run anything else to verify.
 
 ## Step 2: Enable developer mode
 
 ```bash
-bench set-config -g developer_mode 1
+pilot set-config -g developer_mode 1
 ```
 
 ## Step 3: Pick or create site
@@ -21,30 +21,38 @@ See [site-management.md](./site-management.md) for finding or creating a site. A
 
 ## Step 4: Create app
 
-The `bench new-app` command MUST use piped `printf`. No heredoc (`<<EOF`). No `--no-input`. No `--no-git`. No bare `bench new-app <name>` without pipe.
-
 Ask user for: app name, title, description, publisher, email, license.
 
 ```bash
-printf '<title>\n<description>\n<publisher>\n<email>\n<license>\nN\nN\nN\n' | bench new-app <app-name>
+pilot new-app <app-name> \
+  --title '<title>' \
+  --description '<description>' \
+  --publisher '<publisher>' \
+  --email '<email>' \
+  --license '<license>'
 ```
 
 Example:
 ```bash
-printf 'Expense Tracker\nTrack expenses\nJohn\njohn@example.com\nmit\nN\nN\nN\n' | bench new-app expense_tracker
+pilot new-app expense_tracker \
+  --title 'Expense Tracker' \
+  --description 'Track expenses' \
+  --publisher 'John' \
+  --email 'john@example.com' \
+  --license mit
 ```
 
 ## Step 5: Install app on site
 
 ```bash
-bench --site <site> install-app <app-name>
+pilot install-app <site> <app-name>
 ```
 
 ## Step 6: Build features
 
 Write DocTypes, controllers, hooks, permissions, UI directly in the app module directory created in step 4.
 
-The app structure after `bench new-app myapp`:
+The app structure after `pilot new-app` creates `myapp`:
 ```
 apps/myapp/
   myapp/
@@ -60,18 +68,18 @@ Load the relevant feature references from the main SKILL.md table as needed.
 ## Step 7: Migrate and verify
 
 ```bash
-bench --site <site> migrate
+pilot --site <site> migrate
 ```
 
 **Rules:**
 - After migration succeeds, do NOT query the database directly to verify schema changes. The migrate output is the source of truth.
 
-Start bench in background if not already running:
+Start Pilot in the background if it is not already running:
 ```bash
-bench start
+pilot start
 ```
 
 Get URL:
 ```bash
-bench --site <site> execute frappe.utils.get_url
+pilot --site <site> execute frappe.utils.get_url
 ```

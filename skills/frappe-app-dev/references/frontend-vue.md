@@ -77,7 +77,7 @@ yarn install
 yarn dev            # starts Vite dev server with HMR (proxies API to Frappe)
 ```
 
-The Vite dev server proxies `/api` calls to the running Frappe backend (`bench start` must be running).
+The Vite dev server proxies `/api` calls to the running Frappe backend (`pilot start` must be running).
 
 ## Production build
 
@@ -86,9 +86,9 @@ cd apps/<app>/frontend
 yarn build          # outputs to apps/<app>/<app>/public/frontend
 ```
 
-Or via bench:
+Or via Pilot:
 ```bash
-bench build --app <app-name>
+pilot build --apps <app-name> --force
 ```
 
 ## Calling Frappe APIs from Vue

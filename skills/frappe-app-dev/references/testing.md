@@ -63,32 +63,32 @@ Run tests on a **separate site** from the one the user is actively working on. T
 
 Convention: if the dev site is `expense.localhost`, create `expense-test.localhost` for tests:
 ```bash
-bench new-site expense-test.localhost --admin-password admin
-bench --site expense-test.localhost install-app <app-name>
+pilot new-site expense-test.localhost --admin-password admin
+pilot install-app expense-test.localhost <app-name>
 ```
 
 Always run tests against the test site:
 ```bash
-bench --site expense-test.localhost run-tests --app <app-name>
+pilot --site expense-test.localhost run-tests --app <app-name>
 ```
 
 ## Running tests
 
 ```bash
 # All tests for an app
-bench --site <site> run-tests --app <app-name>
+pilot --site <site> run-tests --app <app-name>
 
 # Specific DocType
-bench --site <site> run-tests --doctype "Expense"
+pilot --site <site> run-tests --doctype "Expense"
 
 # Specific test file
-bench --site <site> run-tests --module <app>.<module>.doctype.<doctype>.test_<doctype>
+pilot --site <site> run-tests --module <app>.<module>.doctype.<doctype>.test_<doctype>
 
 # Specific test method
-bench --site <site> run-tests --module <app>.<module>.doctype.<doctype>.test_<doctype> --test test_expense_creation
+pilot --site <site> run-tests --module <app>.<module>.doctype.<doctype>.test_<doctype> --test test_expense_creation
 ```
 
 ## Common pitfalls
 
-- If tests fail with "DocType not found", run `bench --site <site> migrate` first.
+- If tests fail with "DocType not found", run `pilot --site <site> migrate` first.
 - Test files must be named `test_*.py` to be discovered.
