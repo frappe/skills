@@ -4,18 +4,17 @@ Use this flow when the user wants to extend, modify, or fix an app that already 
 
 ## Step 1: Find and confirm bench root
 
-The bench root is typically the parent of the workspace directory, or the workspace itself. Look for `apps/` and `sites/`.
+Run the context resolver from the workspace:
 
 ```bash
-ls apps/ sites/
+python3 <skill-directory>/scripts/resolve_frappe_context.py
 ```
 
-If the workspace is inside the app (e.g. user opened `apps/myapp/`), go up:
-```bash
-ls ../../apps/ ../../sites/
-```
+If the site is known, pass `--site <site>`. This can select a different Pilot bench from the current workspace.
 
-Use Pilot if `bench.toml` exists. Read `<bench>` from `[bench].name`. Otherwise, use Bench if `Procfile` exists.
+If it cannot resolve the context, ask the user to select a bench. Use the returned `bench_root` for manager commands.
+
+Keep code edits in the user's workspace. Do not switch to the bench copy when the workspace is an external app checkout.
 
 ## Step 2: Locate the app
 
@@ -38,6 +37,8 @@ Do NOT create a second app with either manager.
 ## Step 3: Confirm site and app installation
 
 See [site-management.md](./site-management.md) for finding the right site for this app.
+
+Run the context resolver with the selected site before you continue. Use its manager and bench for all later commands.
 
 Verify the app is installed:
 ```bash

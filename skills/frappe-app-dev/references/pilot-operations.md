@@ -1,6 +1,6 @@
 # Pilot CLI Reference
 
-Use these commands only when the bench root contains `bench.toml`. Read `<bench>` from `[bench].name` in that file.
+Use these commands only when the context resolver selects Pilot. Use its returned `bench` value for `<bench>`.
 
 Always pass `-b <bench>`. Do not rely on the current directory or single-bench inference.
 

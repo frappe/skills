@@ -4,11 +4,13 @@ Follow these steps in order.
 
 ## Step 1: Confirm bench root
 
+Run the context resolver without `--site` from inside the target bench:
+
 ```bash
-ls apps/ sites/
+python3 <skill-directory>/scripts/resolve_frappe_context.py
 ```
 
-Use Pilot if `bench.toml` exists. Read `<bench>` from `[bench].name`. Otherwise, use Bench if `Procfile` exists.
+If it cannot resolve the context, ask the user to select a bench. Use the returned manager for all later steps.
 
 ## Step 2: Enable developer mode
 

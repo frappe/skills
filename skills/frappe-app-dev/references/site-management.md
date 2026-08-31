@@ -2,11 +2,15 @@
 
 ## Finding existing sites
 
+Resolve an existing site before you run a manager command:
+
 ```bash
-ls sites/
+python3 <skill-directory>/scripts/resolve_frappe_context.py --site <site>
 ```
 
-Ignore these entries: `assets`, `apps.txt`, `common_site_config.json`, `currentsite.txt`. Everything else is a site directory.
+The resolver checks all benches in the Pilot installation. It also checks the current legacy bench and the roots in `FRAPPE_BENCH_ROOTS`.
+
+If the site name is not known, inspect `sites/` in the resolved bench. Ignore `assets`, `apps.txt`, `common_site_config.json`, and `currentsite.txt`.
 
 ## Matching a site to an app
 
@@ -21,7 +25,7 @@ pilot -b <bench> list-site-apps <site>
 bench --site <site> list-apps
 ```
 
-If multiple sites exist, check each until you find the one with the target app installed.
+If multiple sites exist, check each until you find the one with the target app installed. Resolve the selected site again before other commands.
 
 ## Creating a new site
 

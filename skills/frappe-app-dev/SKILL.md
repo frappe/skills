@@ -16,13 +16,21 @@ description: >-
 
 ## CLI Selection
 
-- Inspect the bench root before running a manager command.
-- Honor the user's CLI choice when the bench supports it.
-- If `bench.toml` exists, use Pilot.
-- Otherwise, if `Procfile`, `apps/`, and `sites/` exist, use Bench.
-- If both markers exist and the user gave no choice, prefer Pilot.
-- Run only the command form for the selected manager.
-- For Pilot, read the bench name from `[bench].name` in `bench.toml`.
+Run the bundled [context resolver](./scripts/resolve_frappe_context.py) before a manager command.
+
+```bash
+python3 <skill-directory>/scripts/resolve_frappe_context.py --site <site>
+```
+
+- Pass `--site` for an existing site. The resolver checks every bench in the Pilot installation.
+- Omit `--site` for a new site or a bench-only command. Run it from inside the target bench.
+- Set `FRAPPE_BENCH_ROOTS` to a path-separated list when a legacy bench is outside the current workspace.
+- Use only a result with `"status": "resolved"`.
+- Stop and ask the user to select a bench when the result is ambiguous, unavailable, or unresolved.
+- Honor an explicit CLI choice only when it matches the resolved site or bench.
+- Use the returned `manager` and `bench`. Run only that manager's command form.
+- A Pilot site takes priority over an unrelated legacy bench in the current directory.
+- If the same site exists in Pilot and Bench, treat it as ambiguous.
 
 ## Global Rules
 
@@ -32,8 +40,8 @@ description: >-
 - Use the exact Pilot syntax in [pilot-operations.md](./references/pilot-operations.md). Do not translate Bench commands mechanically.
 - Never run `pilot --site ...`. Use `pilot -b <bench> --site ...`.
 - Pilot exposes Frappe commands directly. Do not insert a `frappe` subcommand.
-- Do not run CLI discovery commands or check the Frappe version.
-- Do not delegate manager detection to a subagent. Inspect `bench.toml`, `Procfile`, `apps/`, and `sites/` yourself.
+- Do not run manual CLI discovery commands or check the Frappe version. Use the context resolver.
+- Do not delegate manager detection to a subagent.
 - Do not create DocType folders with `mkdir`. Let the selected manager run the site migration.
 - Run the selected manager's development processes in the background only.
 - Before starting processes, check if they are already running in an existing terminal.
