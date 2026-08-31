@@ -8,21 +8,44 @@ description: >-
   background jobs or scheduled tasks, managing permissions or roles, writing
   Frappe tests, or working with frappe.db / frappe.qb. Also applies when the
   user says things like "how do I hook into save", "add a field to a DocType",
-  "create a REST endpoint in Frappe", "run bench migrate", or "install an app on
-  a site" — even if they don't explicitly say "Frappe".
+  "create a REST endpoint in Frappe", "run bench migrate", "run a Pilot site migration",
+  or "install an app on a site" — even if they don't explicitly say "Frappe".
 ---
 
 # Frappe Full-Stack App Builder
 
+## CLI Selection
+
+Run the bundled [context resolver](./scripts/resolve_frappe_context.py) before a manager command.
+
+```bash
+python3 <skill-directory>/scripts/resolve_frappe_context.py --site <site>
+```
+
+- Pass `--site` for an existing site. The resolver checks every bench in the Pilot installation.
+- Omit `--site` for a new site or a bench-only command. Run it from inside the target bench.
+- Set `FRAPPE_BENCH_ROOTS` to a path-separated list when a legacy bench is outside the current workspace.
+- Use only a result with `"status": "resolved"`.
+- Stop and ask the user to select a bench when the result is ambiguous, unavailable, or unresolved.
+- Honor an explicit CLI choice only when it matches the resolved site or bench.
+- Use the returned `manager` and `bench`. Run only that manager's command form.
+- A Pilot site takes priority over an unrelated legacy bench in the current directory.
+- If the same site exists in Pilot and Bench, treat it as ambiguous.
+
 ## Global Rules
 
-- Use bare `bench`. Not `./env/bin/bench`. Not a full path.
-- Do not run `which bench`, `bench --version`, `bench --help`, or check frappe version. No discovery commands.
-- Do not delegate bench detection to a subagent. Run `ls apps/ sites/ Procfile` yourself.
-- Do not create DocType folders with `mkdir`. Frappe creates them via `bench migrate`.
-- Run `bench start` in a background process only.
-- Before running `bench start`, check if it's already running in an existing terminal. Do not start a second instance.
-- Always pass `--site <site>` explicitly to bench commands. Never run bare `bench migrate`.
+- Use bare `pilot` or `bench`. Do not use a full path.
+- Always pass `-b <bench>` to Pilot commands that operate on a bench.
+- Do not rely on the current directory or single-bench inference for Pilot.
+- Use the exact Pilot syntax in [pilot-operations.md](./references/pilot-operations.md). Do not translate Bench commands mechanically.
+- Never run `pilot --site ...`. Use `pilot -b <bench> --site ...`.
+- Pilot exposes Frappe commands directly. Do not insert a `frappe` subcommand.
+- Do not run manual CLI discovery commands or check the Frappe version. Use the context resolver.
+- Do not delegate manager detection to a subagent.
+- Do not create DocType folders with `mkdir`. Let the selected manager run the site migration.
+- Run the selected manager's development processes in the background only.
+- Before starting processes, check if they are already running in an existing terminal.
+- Include the site name in every site-specific command. Never run a bare migration.
 
 ## Flow Selection
 
@@ -54,4 +77,5 @@ Load ONLY the references needed for the current task:
 | Permissions      | Roles, DocType permissions, `has_permission` | [permissions.md](./references/permissions.md)           |
 | Testing          | Writing & running tests                      | [testing.md](./references/testing.md)                   |
 | Frontend & UI    | Desk UI, Vue SPA, portal pages           | [frontend.md](./references/frontend.md) (router → 3 sub-files) |
-| Bench CLI        | All bench commands reference                 | [bench-operations.md](./references/bench-operations.md) |
+| Pilot CLI        | Pilot and Frappe passthrough commands        | [pilot-operations.md](./references/pilot-operations.md) |
+| Bench CLI        | Bench commands                               | [bench-operations.md](./references/bench-operations.md) |

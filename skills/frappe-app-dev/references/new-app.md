@@ -4,14 +4,21 @@ Follow these steps in order.
 
 ## Step 1: Confirm bench root
 
+Run the context resolver without `--site` from inside the target bench:
+
 ```bash
-ls apps/ sites/ Procfile
+python3 <skill-directory>/scripts/resolve_frappe_context.py
 ```
-If it succeeds, bench is valid. Do not run anything else to verify.
+
+If it cannot resolve the context, ask the user to select a bench. Use the returned manager for all later steps.
 
 ## Step 2: Enable developer mode
 
 ```bash
+# Pilot
+pilot -b <bench> set-config -g developer_mode 1
+
+# Bench
 bench set-config -g developer_mode 1
 ```
 
@@ -21,15 +28,38 @@ See [site-management.md](./site-management.md) for finding or creating a site. A
 
 ## Step 4: Create app
 
-The `bench new-app` command MUST use piped `printf`. No heredoc (`<<EOF`). No `--no-input`. No `--no-git`. No bare `bench new-app <name>` without pipe.
-
 Ask user for: app name, title, description, publisher, email, license.
+
+For Pilot:
+
+```bash
+pilot -b <bench> new-app <app-name> \
+  --title '<title>' \
+  --description '<description>' \
+  --publisher '<publisher>' \
+  --email '<email>' \
+  --license '<license>'
+```
+
+Example:
+
+```bash
+pilot -b <bench> new-app expense_tracker \
+  --title 'Expense Tracker' \
+  --description 'Track expenses' \
+  --publisher 'John' \
+  --email 'john@example.com' \
+  --license mit
+```
+
+For Bench, pipe the answers with `printf`. Do not use a heredoc, `--no-input`, or `--no-git`.
 
 ```bash
 printf '<title>\n<description>\n<publisher>\n<email>\n<license>\nN\nN\nN\n' | bench new-app <app-name>
 ```
 
 Example:
+
 ```bash
 printf 'Expense Tracker\nTrack expenses\nJohn\njohn@example.com\nmit\nN\nN\nN\n' | bench new-app expense_tracker
 ```
@@ -37,6 +67,10 @@ printf 'Expense Tracker\nTrack expenses\nJohn\njohn@example.com\nmit\nN\nN\nN\n'
 ## Step 5: Install app on site
 
 ```bash
+# Pilot
+pilot -b <bench> install-app <site> <app-name>
+
+# Bench
 bench --site <site> install-app <app-name>
 ```
 
@@ -44,7 +78,7 @@ bench --site <site> install-app <app-name>
 
 Write DocTypes, controllers, hooks, permissions, UI directly in the app module directory created in step 4.
 
-The app structure after `bench new-app myapp`:
+The app structure after the selected manager creates `myapp`:
 ```
 apps/myapp/
   myapp/
@@ -60,18 +94,30 @@ Load the relevant feature references from the main SKILL.md table as needed.
 ## Step 7: Migrate and verify
 
 ```bash
+# Pilot
+pilot -b <bench> --site <site> migrate
+
+# Bench
 bench --site <site> migrate
 ```
 
 **Rules:**
 - After migration succeeds, do NOT query the database directly to verify schema changes. The migrate output is the source of truth.
 
-Start bench in background if not already running:
+Start development processes in the background if they are not already running:
 ```bash
+# Pilot
+pilot -b <bench> start
+
+# Bench
 bench start
 ```
 
 Get URL:
 ```bash
+# Pilot
+pilot -b <bench> --site <site> execute frappe.utils.get_url
+
+# Bench
 bench --site <site> execute frappe.utils.get_url
 ```

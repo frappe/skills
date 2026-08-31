@@ -62,17 +62,50 @@ class TestExpense(IntegrationTestCase):
 Run tests on a **separate site** from the one the user is actively working on. Tests create, modify, and delete data — running them on the development site will pollute it.
 
 Convention: if the dev site is `expense.localhost`, create `expense-test.localhost` for tests:
+
+For Pilot:
+
+```bash
+pilot -b <bench> new-site expense-test.localhost --admin-password admin
+pilot -b <bench> install-app expense-test.localhost <app-name>
+```
+
+For Bench:
+
 ```bash
 bench new-site expense-test.localhost --admin-password admin
 bench --site expense-test.localhost install-app <app-name>
 ```
 
 Always run tests against the test site:
+
 ```bash
+# Pilot
+pilot -b <bench> --site expense-test.localhost run-tests --app <app-name>
+
+# Bench
 bench --site expense-test.localhost run-tests --app <app-name>
 ```
 
 ## Running tests
+
+With Pilot:
+
+```bash
+# All tests for an app
+pilot -b <bench> --site <site> run-tests --app <app-name>
+
+# Specific DocType
+pilot -b <bench> --site <site> run-tests --doctype "Expense"
+
+# Specific test file
+pilot -b <bench> --site <site> run-tests --module <app>.<module>.doctype.<doctype>.test_<doctype>
+
+# Specific test method
+pilot -b <bench> --site <site> run-tests --module <app>.<module>.doctype.<doctype>.test_<doctype> --test test_expense_creation
+```
+
+With Bench:
 
 ```bash
 # All tests for an app
@@ -90,5 +123,5 @@ bench --site <site> run-tests --module <app>.<module>.doctype.<doctype>.test_<do
 
 ## Common pitfalls
 
-- If tests fail with "DocType not found", run `bench --site <site> migrate` first.
+- If tests fail with "DocType not found", migrate the test site first.
 - Test files must be named `test_*.py` to be discovered.

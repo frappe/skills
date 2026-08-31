@@ -4,16 +4,17 @@ Use this flow when the user wants to extend, modify, or fix an app that already 
 
 ## Step 1: Find and confirm bench root
 
-The bench root is typically the parent of the workspace directory, or the workspace itself. Look for `apps/`, `sites/`, and `Procfile`.
+Run the context resolver from the workspace:
 
 ```bash
-ls apps/ sites/ Procfile
+python3 <skill-directory>/scripts/resolve_frappe_context.py
 ```
 
-If the workspace is inside the app (e.g. user opened `apps/myapp/`), go up:
-```bash
-ls ../../apps/ ../../sites/ ../../Procfile
-```
+If the site is known, pass `--site <site>`. This can select a different Pilot bench from the current workspace.
+
+If it cannot resolve the context, ask the user to select a bench. Use the returned `bench_root` for manager commands.
+
+Keep code edits in the user's workspace. Do not switch to the bench copy when the workspace is an external app checkout.
 
 ## Step 2: Locate the app
 
@@ -31,25 +32,39 @@ Each subdirectory under the module is a Frappe module (contains DocTypes, etc.):
 ls apps/<app-name>/<app-name>/<module-name>/
 ```
 
-Do NOT create a second app. Do NOT run `bench new-app`.
+Do NOT create a second app with either manager.
 
 ## Step 3: Confirm site and app installation
 
 See [site-management.md](./site-management.md) for finding the right site for this app.
 
+Run the context resolver with the selected site before you continue. Use its manager and bench for all later commands.
+
 Verify the app is installed:
 ```bash
+# Pilot
+pilot -b <bench> list-site-apps <site>
+
+# Bench
 bench --site <site> list-apps
 ```
 
 If not installed:
 ```bash
+# Pilot
+pilot -b <bench> install-app <site> <app-name>
+
+# Bench
 bench --site <site> install-app <app-name>
 ```
 
 ## Step 4: Enable developer mode
 
 ```bash
+# Pilot
+pilot -b <bench> set-config -g developer_mode 1
+
+# Bench
 bench set-config -g developer_mode 1
 ```
 
@@ -65,6 +80,10 @@ Key files to read first:
 ## Step 6: Migrate and verify
 
 ```bash
+# Pilot
+pilot -b <bench> --site <site> migrate
+
+# Bench
 bench --site <site> migrate
 ```
 

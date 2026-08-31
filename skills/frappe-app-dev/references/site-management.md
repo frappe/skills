@@ -2,11 +2,15 @@
 
 ## Finding existing sites
 
+Resolve an existing site before you run a manager command:
+
 ```bash
-ls sites/
+python3 <skill-directory>/scripts/resolve_frappe_context.py --site <site>
 ```
 
-Ignore these entries: `assets`, `apps.txt`, `common_site_config.json`, `currentsite.txt`. Everything else is a site directory.
+The resolver checks all benches in the Pilot installation. It also checks the current legacy bench and the roots in `FRAPPE_BENCH_ROOTS`.
+
+If the site name is not known, inspect `sites/` in the resolved bench. Ignore `assets`, `apps.txt`, `common_site_config.json`, and `currentsite.txt`.
 
 ## Matching a site to an app
 
@@ -14,26 +18,36 @@ Convention: site name often contains the app name (e.g. `gameplan.localhost` for
 
 To confirm which apps are on a site:
 ```bash
+# Pilot
+pilot -b <bench> list-site-apps <site>
+
+# Bench
 bench --site <site> list-apps
 ```
 
-If multiple sites exist, check each until you find the one with the target app installed.
+If multiple sites exist, check each until you find the one with the target app installed. Resolve the selected site again before other commands.
 
 ## Creating a new site
 
-First, check if `root_password` is already set in `sites/common_site_config.json`. If not, recommend the user set it once so future site creation doesn't require the password each time:
+Pilot reads the configured database credentials:
+
+```bash
+pilot -b <bench> new-site <name>.localhost --admin-password admin
+```
+
+For Bench, first check `root_password` in `sites/common_site_config.json`. If it is missing, set it once:
 
 ```bash
 bench set-config -g root_password '<pwd>'
 ```
 
-Then create the site:
+Then create the site. You can also pass the root password without storing it:
 
 ```bash
-# If root_password is in common_site_config.json:
+# If root_password is in common_site_config.json
 bench new-site <name>.localhost --admin-password admin
 
-# Otherwise, pass it explicitly:
+# Otherwise, pass it explicitly
 bench new-site <name>.localhost --db-root-password '<pwd>' --admin-password admin
 ```
 
@@ -41,8 +55,8 @@ Naming convention: `<app-name>.localhost` (e.g. `expense_tracker.localhost`).
 
 ## Other site commands
 
-See [bench-operations.md](./bench-operations.md). Ask the user before you drop a site.
+See [pilot-operations.md](./pilot-operations.md) or [bench-operations.md](./bench-operations.md). Ask the user before you drop a site.
 
 ## Site config
 
-Per-site config lives in `sites/<site>/site_config.json`. Global config in `sites/common_site_config.json`.
+Per-site config lives in `sites/<site>/site_config.json`. Pilot config lives in `bench.toml`. Shared Frappe config lives in `sites/common_site_config.json`.

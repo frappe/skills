@@ -1,5 +1,7 @@
 # Bench CLI Reference
 
+Use these commands only when the context resolver selects Bench.
+
 ## App & site lifecycle
 
 ```bash
