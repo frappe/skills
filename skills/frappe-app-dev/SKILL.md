@@ -29,9 +29,9 @@ description: >-
 - Use bare `pilot` or `bench`. Do not use a full path.
 - Always pass `-b <bench>` to Pilot commands that operate on a bench.
 - Do not rely on the current directory or single-bench inference for Pilot.
-- Use native Pilot commands when available. Use `pilot -b <bench> frappe ...` for Frappe commands.
-- Never run `pilot --site ...`. Use `pilot -b <bench> frappe --site ...`.
-- Do not pass app or site lifecycle commands through Frappe when Pilot has a native command.
+- Use the exact Pilot syntax in [pilot-operations.md](./references/pilot-operations.md). Do not translate Bench commands mechanically.
+- Never run `pilot --site ...`. Use `pilot -b <bench> --site ...`.
+- Pilot exposes Frappe commands directly. Do not insert a `frappe` subcommand.
 - Do not run CLI discovery commands or check the Frappe version.
 - Do not delegate manager detection to a subagent. Inspect `bench.toml`, `Procfile`, `apps/`, and `sites/` yourself.
 - Do not create DocType folders with `mkdir`. Let the selected manager run the site migration.

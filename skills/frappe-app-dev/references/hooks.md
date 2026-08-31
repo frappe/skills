@@ -112,7 +112,7 @@ Export fixtures with the selected manager:
 
 ```bash
 # Pilot
-pilot -b <bench> frappe --site <site> export-fixtures --app <app-name>
+pilot -b <bench> --site <site> export-fixtures --app <app-name>
 
 # Bench
 bench --site <site> export-fixtures --app <app-name>

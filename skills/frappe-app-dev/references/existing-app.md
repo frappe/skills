@@ -61,7 +61,7 @@ bench --site <site> install-app <app-name>
 
 ```bash
 # Pilot
-pilot -b <bench> frappe set-config -g developer_mode 1
+pilot -b <bench> set-config -g developer_mode 1
 
 # Bench
 bench set-config -g developer_mode 1
@@ -80,7 +80,7 @@ Key files to read first:
 
 ```bash
 # Pilot
-pilot -b <bench> frappe --site <site> migrate
+pilot -b <bench> --site <site> migrate
 
 # Bench
 bench --site <site> migrate

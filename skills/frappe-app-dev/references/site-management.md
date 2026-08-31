@@ -51,7 +51,7 @@ Naming convention: `<app-name>.localhost` (e.g. `expense_tracker.localhost`).
 
 ## Other site commands
 
-See [pilot-operations.md](./pilot-operations.md) or [bench-operations.md](./bench-operations.md). Ask the user before you drop a site. For Pilot, use Pilot Admin instead of Frappe passthrough.
+See [pilot-operations.md](./pilot-operations.md) or [bench-operations.md](./bench-operations.md). Ask the user before you drop a site.
 
 ## Site config
 

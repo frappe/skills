@@ -81,7 +81,7 @@ Always run tests against the test site:
 
 ```bash
 # Pilot
-pilot -b <bench> frappe --site expense-test.localhost run-tests --app <app-name>
+pilot -b <bench> --site expense-test.localhost run-tests --app <app-name>
 
 # Bench
 bench --site expense-test.localhost run-tests --app <app-name>
@@ -93,16 +93,16 @@ With Pilot:
 
 ```bash
 # All tests for an app
-pilot -b <bench> frappe --site <site> run-tests --app <app-name>
+pilot -b <bench> --site <site> run-tests --app <app-name>
 
 # Specific DocType
-pilot -b <bench> frappe --site <site> run-tests --doctype "Expense"
+pilot -b <bench> --site <site> run-tests --doctype "Expense"
 
 # Specific test file
-pilot -b <bench> frappe --site <site> run-tests --module <app>.<module>.doctype.<doctype>.test_<doctype>
+pilot -b <bench> --site <site> run-tests --module <app>.<module>.doctype.<doctype>.test_<doctype>
 
 # Specific test method
-pilot -b <bench> frappe --site <site> run-tests --module <app>.<module>.doctype.<doctype>.test_<doctype> --test test_expense_creation
+pilot -b <bench> --site <site> run-tests --module <app>.<module>.doctype.<doctype>.test_<doctype> --test test_expense_creation
 ```
 
 With Bench:

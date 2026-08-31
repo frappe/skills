@@ -102,7 +102,7 @@ A child DocType needs no permissions. It inherits them from the parent.
 Always run:
 ```bash
 # Pilot
-pilot -b <bench> frappe --site <site> migrate
+pilot -b <bench> --site <site> migrate
 
 # Bench
 bench --site <site> migrate

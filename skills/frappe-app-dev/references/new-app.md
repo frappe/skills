@@ -14,7 +14,7 @@ Use Pilot if `bench.toml` exists. Read `<bench>` from `[bench].name`. Otherwise,
 
 ```bash
 # Pilot
-pilot -b <bench> frappe set-config -g developer_mode 1
+pilot -b <bench> set-config -g developer_mode 1
 
 # Bench
 bench set-config -g developer_mode 1
@@ -93,7 +93,7 @@ Load the relevant feature references from the main SKILL.md table as needed.
 
 ```bash
 # Pilot
-pilot -b <bench> frappe --site <site> migrate
+pilot -b <bench> --site <site> migrate
 
 # Bench
 bench --site <site> migrate
@@ -114,7 +114,7 @@ bench start
 Get URL:
 ```bash
 # Pilot
-pilot -b <bench> frappe --site <site> execute frappe.utils.get_url
+pilot -b <bench> --site <site> execute frappe.utils.get_url
 
 # Bench
 bench --site <site> execute frappe.utils.get_url
