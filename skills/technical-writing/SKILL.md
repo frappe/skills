@@ -10,7 +10,7 @@ WORDS
 - Use the short common word: start (not begin/commence/initiate), use (not utilize/leverage), help (not facilitate), make sure (not ensure), before (not prior to), after (not subsequent to), about (not regarding/concerning), get (not obtain/acquire), show (not demonstrate), also (not additionally/furthermore/moreover), now (not currently/at this time), many (not numerous), first (not initial), enough (not sufficient), try (not attempt), rest (not remainder), do (not implement), called (not referred to as), because (not due to the fact that), for (not for the purpose of), until (not until such time as), except (not with the possible exception of).
 - Give each word one meaning. "fall" means to move down, not to decrease.
 - No marketing adjectives: seamless, robust, powerful, cutting-edge, effortless, world-class, next-generation, revolutionary.
-- No euphemism. Say what happened. "we removed 3000 jobs", not "involuntary methodologies".
+- No euphemism. Say what happened. "We laid off 3,000 employees", not "we reduced headcount".
 - Cut the qualifiers: a bit, a little, sort of, kind of, rather, quite, very, too, pretty much, in a sense, arguably, decidedly. Each one costs the reader some trust.
 - Cut the announcement phrases: "it is important to note that", "it should be pointed out that", "it is interesting that". If it should be pointed out, point it out.
 - American spelling.
