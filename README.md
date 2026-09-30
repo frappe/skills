@@ -12,6 +12,7 @@ A collection of agent skills for building [Frappe Framework](https://frappeframe
 | `technical-writing` | Write documentation, READMEs, commits, pull requests, and release notes in Simplified Technical English |
 | `ui-design` | General UI/UX design principles |
 | `draft-security-advisory` | Write a publication-ready GitHub Security Advisory (GHSA) from a vulnerability report — Impact + Workarounds body, CVSS, CWE, versions, credits. User-invoked only: run `/draft-security-advisory` |
+| `deep-app-audit` | Multi-agent audit of a Frappe app for security, correctness, and customization defects. Every candidate is verified, and the result is one report. User-invoked only: run `/deep-app-audit <app path>` |
 
 ## Install
 
@@ -40,4 +41,4 @@ Skills are matched by the `name` field in each `SKILL.md` frontmatter, and live 
 
 Most skills activate automatically when you ask your agent about a matching task. Examples: create a DocType, build a Vue SPA, or run `bench migrate` (`frappe-app-dev`), review a diff (`frappe-code-review`), write a commit message (`technical-writing`), or lay out a page (`ui-design`).
 
-Some skills only run when you call them. Run `/draft-security-advisory` to start that skill.
+Some skills only run when you call them. Run `/draft-security-advisory` or `/deep-app-audit` to start them.
