@@ -20,6 +20,13 @@ for it. Direct access to the child doctype bypasses the parent check.
 ## Confirm
 - The test is simple: can an actor with read on doctype A read a field of doctype B where
   they have no read on B?
+- A child table has no permission rows of its own. The parent authorizes it. An empty
+  `permissions` array on a child table is normal, not a finding. The finding is a query that
+  reads a child doctype without a check on its parent.
+- The child row's parent is found and checked on the parent doctype: guarded.
+- The actor has `read` at permlevel 0 on the linked doctype, or an automatic role has it: no
+  boundary is crossed.
 
 ## Report
-Give the exact `fields` payload that leaks the linked value.
+Give the exact `fields` payload that leaks the linked value, and name the parent doctype whose
+permission was not checked.

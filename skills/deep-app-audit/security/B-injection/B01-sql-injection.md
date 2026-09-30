@@ -35,8 +35,9 @@ find. Auditing them together avoids doing the same sweep three times.
 - For every interpolated value above that is *not* a request parameter, ask where it was
   stored: a doctype field, a Singles setting, a naming series, a custom field label, a
   translation.
-- Fields any low-privilege user can write: `Supplier.supplier_name`, item codes, batch/serial
-  naming prefixes, `Address`, tags, comment text.
+- Fields any low-privilege user can write. These are different in each app: find the doctypes
+  where a portal or low-privilege role has `write` at permlevel 0. `Address`, tags, and comment
+  text are examples in the framework.
 - Naming series and autoname strings — they are concatenated into SQL and Jinja both.
 
 ## Confirm
@@ -46,6 +47,12 @@ find. Auditing them together avoids doing the same sweep three times.
   not escaping. Absence of an allowlist is the finding.
 - `frappe.db.escape` is a partial mitigation; check it is applied to every interpolated value
   and that the result is not wrapped in extra quotes.
+- `@validate_and_sanitize_search_inputs` sanitizes `searchfield` and nothing else. It does not
+  touch `filters`, and it authorizes nothing. The decorator is not a guard, and its absence is not
+  a finding (`_framework-guards.md` section 5).
+- A port to the query builder is not a fix by itself. It adds no permission, and it stops an
+  identifier injection only when the installed `pypika` escapes identifiers
+  (`_framework-guards.md` section 9).
 - Unparameterisable sinks support blind and time-based extraction (`sleep()`, `benchmark()`,
   conditional `CASE`), so "you can only control ordering" is still critical.
 - Denylist-based sanitisers are the recurring failure — look for a way to express the payload

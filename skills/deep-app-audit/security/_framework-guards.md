@@ -137,10 +137,6 @@ section.
   HTTP 417. Do not report an operator payload against a parameter with a scalar annotation.
 - `filters: dict` enforces **only the container**. The values in it can be anything.
 - A parameter with **no annotation** is not validated.
-- A **string annotation** is not validated. The function skips each annotation that is a `str`
-  or a `ForwardRef`. In a module with `from __future__ import annotations`, each annotation is a
-  string, so **no parameter in that module is validated**. Check the top of the module before you
-  trust an annotation.
 - The type of the default value is added to the accepted types. `name: str = {}` accepts a dict.
   `name: str = None` accepts only a string or `None`.
 - `bool` also accepts `int` and `float`.
