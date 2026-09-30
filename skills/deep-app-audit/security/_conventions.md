@@ -1,7 +1,11 @@
 # Conventions for the security audit
 
 Every file in this directory assumes these conventions. A file never repeats them. Read this file
-first, then read the one scope or check that you were given.
+first, then `_framework-guards.md`, then the one scope or check that you were given.
+
+`_framework-guards.md` is not optional. It lists what each Frappe call already checks, so it
+lists which candidates are not findings. Most of what a pattern search finds in a Frappe app is
+guarded one frame down, by the framework.
 
 `quality/_conventions.md` has the same sections for the quality audit.
 
@@ -73,7 +77,37 @@ and stop. That is a correct result, not a failure. Do not invent findings to fil
    DocType controller method, a hook, a portal route, a socketio handler, or a scheduled job that
    reads user data. Unreachable code is not a finding.
 5. Apply the `## Confirm` section.
-6. Discard anything that you cannot state as a concrete attack.
+6. Refute each candidate that is left, with the questions below.
+7. Discard anything that you cannot state as a concrete attack.
+
+The framework on the bench is part of the evidence. Almost each guard that decides a verdict is
+in the `frappe` checkout, not in the app. Read it there. A guard quoted from memory is a guess.
+
+### Refutation questions
+
+Answer each question that applies before a candidate leaves your hands. Each one has a section in
+`_framework-guards.md` with the mechanism and the test that settles it. A candidate that fails
+one question is not a finding.
+
+1. **Is it an entry point?** `@frappe.whitelist()` on that function, not a dotted path in
+   `frappe.enqueue`. A controller method is reachable only through the document, and
+   `run_doc_method` checks `read` on it. (Section 2.)
+2. **Does the document layer check it already?** `insert`, `save`, `submit`, `cancel`,
+   `delete`, and `get_mapped_doc` check permissions themselves. The gaps are `db.set_value`,
+   `db_set`, `db.delete`, raw DML, and `ignore_permissions`. (Section 1.)
+3. **Is each document at risk covered, the source and the target?** A check on the document
+   written does not cover the document read to build it. (Section 1a.)
+4. **Which read is it, and which right does it check?** `frappe.get_list` applies permissions.
+   `frappe.get_all`, each `frappe.db.*` read, and `frappe.qb.get_query` by default do not. A
+   link or search query checks `select`, not `read`. (Section 3.)
+5. **Can the actor get this already?** Read the permlevel 0 rows of the target doctype for the
+   right that the endpoint checks. An automatic role or a role of the actor that holds it means
+   no boundary is crossed. A child table has no rows of its own. (Section 6.)
+6. **Is the parameter validated?** A scalar annotation rejects a list or a dict with 417, except
+   when the annotation is a string, for example under `from __future__ import annotations`.
+   (Section 4.)
+7. **Is the value worth a boundary?** Universal reference data is not a finding. Tenant
+   configuration is Low. (Section 7.)
 
 ## Live test site
 
@@ -129,6 +163,24 @@ every entry point. A fix to one line must not close five findings.
 - A sink whose input is a constant, or a value already checked against a fixed allowlist.
 - Code that only Administrator or System Manager can reach, when the impact does not exceed what
   that role can already do. Note it as informational at most.
+- A whitelisted function whose only writes go through the document layer (`insert`, `save`,
+  `submit`, `cancel`, `delete`, `get_mapped_doc`) with no `ignore_permissions`, when the document
+  written is the document read. The framework checks it. This is the most common false positive,
+  and at the wrapper it looks exactly like a finding.
+- A controller method on a doctype where only Administrator has `read`. Nobody else can load the
+  document, so nobody reaches the method.
+- A function that is only a `frappe.enqueue` target, with no whitelist decorator of its own.
+- An impact that the roles of the actor permit already: the target doctype grants the right at
+  permlevel 0 to an automatic role or to a role that the actor has.
+- A role gap at a permlevel above 0, on the wrong right (`read` where the endpoint checks
+  `select`), or against an automatic role.
+- An operator payload against a parameter with a validated scalar annotation.
+- Universal reference data returned to anyone: country, timezone, language, and currency tables,
+  and unit or currency conversion factors.
+- A whitelisted function with no callers. That is a hygiene note, not a finding. It is also not a
+  proof that anything is unreachable: a dotted path is callable with no callers.
+
+`_framework-guards.md` section 8 gives the shape of each one.
 
 ## Severity
 
@@ -138,7 +190,8 @@ every entry point. A fix to one line must not close five findings.
   data of another user, tenant, or company, or escalates a role.
 - **Moderate**: a partial disclosure, a bypass that needs an unusual precondition, or a control
   that fails only in a specific configuration.
-- **Low**: enumeration, a metadata leak, or missing defence in depth.
+- **Low**: enumeration, a metadata leak, missing defence in depth, or tenant configuration shown
+  to a caller who must not see it: an account or category name, a period, a default setting.
 
 The actor decides most of the severity. What a System Manager can already do is not a finding
 when they do it another way.
@@ -159,7 +212,9 @@ candidate, and tries to refute it. The verifier works in this order:
    request as the low-privilege actor.
 4. **Guards.** Look for a permission check, a validation, a decorator, or a guard in a caller
    that the finder missed. Look several frames up the call chain. A guard that covers this actor
-   and this object rejects the finding.
+   and this object rejects the finding. Answer each refutation question of "Method" that applies,
+   with the **Refute by** test of its section in `_framework-guards.md`. Say in your reasoning
+   which questions you answered and what each returned.
 5. **Environment.** When the test site sets a key that weakens a control, decide if your result
    depends on it. When the request fails on a site without that key, mark the finding as
    dependent on the environment, state the caveat, and keep the verdict only for the part that
@@ -191,4 +246,6 @@ extracts.
   that is only in a summary is not visible to a person who triages one finding.
 
 End with a coverage line: what you searched, what you did not search on purpose, and what you
-could not resolve.
+could not resolve. Say how many candidates you refuted, and with which refutation question. A
+scope that examined 40 entry points and reports 2 tells the maintainer something. A scope that
+reports 2 with no context does not, and the next run reports the other 38 again.
