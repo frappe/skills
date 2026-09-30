@@ -65,13 +65,15 @@ and stop. That is a correct result, not a failure. Do not invent findings to fil
 
 1. Use the `## Find` section to get candidates. Use the entry-point inventory when there is one,
    then `rg`. Cast wide, then narrow.
-2. For each candidate, read enough of the code around it to know who can reach it and with what
+2. When the run has semgrep matches, add the matches of the rules in `rules/security` of the
+   semgrep rules that fit your scope. Read the rule to know what it matches.
+3. For each candidate, read enough of the code around it to know who can reach it and with what
    input.
-3. Trace reachability. Find a path from an HTTP request to the sink: a whitelisted method, a
+4. Trace reachability. Find a path from an HTTP request to the sink: a whitelisted method, a
    DocType controller method, a hook, a portal route, a socketio handler, or a scheduled job that
    reads user data. Unreachable code is not a finding.
-4. Apply the `## Confirm` section.
-5. Discard anything that you cannot state as a concrete attack.
+5. Apply the `## Confirm` section.
+6. Discard anything that you cannot state as a concrete attack.
 
 ## Live test site
 

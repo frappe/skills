@@ -45,9 +45,9 @@ semgrep: {rules: [frappe-manual-commit], coverage: partial}
 ```
 
 - `mechanism`: optional. The id of the mechanism page that the rule is about.
-- `semgrep`: optional. The Frappe `semgrep-rules` that check the practice. `coverage` is `full`
-  when the semgrep rules find every case, and `partial` when they do not. A match is a candidate,
-  not a finding.
+- `semgrep`: optional. The rule ids in https://github.com/frappe/semgrep-rules that check the
+  practice. `coverage` is `full` when the semgrep rules find every case, and `partial` when they
+  do not. A match is a candidate, not a finding.
 - `## Bad` and `## Good`: short code examples. `## Good` shows the accepted practice.
 - `## Find`: the search signals that find candidates, usually `rg` patterns and code shapes.
 - `## Confirm`: how to tell a true positive from a false positive.
@@ -76,11 +76,13 @@ apply the older behaviour.
 
 1. Use the `## Find` section to get candidates. Use the entry-point inventory when there is one,
    then `rg`. Cast wide, then narrow.
-2. For each candidate, read enough of the code around it to know when it runs and with what data.
-3. Read the framework source when the rule depends on what the framework does. The bench that
+2. When the rule has a `semgrep` field and the run has semgrep matches, add the matches of those
+   rule ids to the candidates. With `coverage: partial`, the `## Find` search is still necessary.
+3. For each candidate, read enough of the code around it to know when it runs and with what data.
+4. Read the framework source when the rule depends on what the framework does. The bench that
    holds the app usually holds `apps/frappe` and the other apps that the target needs.
-4. Apply the `## Confirm` section. A candidate that does not pass it is not a finding.
-5. Discard anything that you cannot state as a concrete failure.
+5. Apply the `## Confirm` section. A candidate that does not pass it is not a finding.
+6. Discard anything that you cannot state as a concrete failure.
 
 ## Live test site
 

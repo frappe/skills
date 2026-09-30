@@ -56,6 +56,8 @@ current directory.
 | `db root password`: for `bench new-site` | | none |
 | `bench`: the bench directory | | found above the checkout |
 | `output`: the run directory | | `<target>/../<app>-deep-audit/` |
+| `semgrep rules`: a local clone of `frappe/semgrep-rules` | `~/src/semgrep-rules` | clone into the run directory |
+| `no semgrep`: do not run the semgrep rules | | semgrep runs |
 | `drop site`: drop the created site at the end | | keep it for triage |
 | `max candidates`: verification cap for each scan | `15` | `15` |
 | `max verifications`: verification cap for the run | `600` | `600` |
@@ -95,9 +97,30 @@ Do this yourself. Change no file inside the app checkout.
 
    The script is read-only. It needs no bench, no site, and no database. When it fails, record
    the error. The audit continues without the inventory.
-5. List the prompts. Include every `*.md` file in the directories from the table above. Exclude
+5. Run the Frappe semgrep rules, unless the user gave `no semgrep`. The rules are the source of
+   the `semgrep` field of the quality rules, so run them once here, not in each scan.
+   1. Get semgrep. When `semgrep` is on `PATH`, use it. Else, when `uv` is on `PATH`, run
+      `uv tool install semgrep`, and call semgrep as `uv tool run semgrep`, because the uv tool
+      directory is not always on `PATH`. Do not install uv or pip packages in another way.
+   2. Get the rules. With the `semgrep rules` option, use that clone as it is. Else, when
+      `<run dir>/semgrep-rules` does not exist, clone it:
+      `git clone --depth 1 https://github.com/frappe/semgrep-rules <run dir>/semgrep-rules`.
+      A clone in the run directory keeps the rules of one run fixed, also when the run resumes.
+      Record the short commit hash of the clone.
+   3. Scan the checkout, and give each match its bare rule id. Semgrep prefixes the rule id
+      with the path of the rules directory, so remove everything up to the last `.`:
+
+      ```
+      <semgrep> scan --config <rules>/rules --json --metrics=off --quiet --output <run dir>/semgrep-raw.json <target>
+      jq --arg t "<target>/" '[.results[] | {rule: (.check_id | split(".") | last),
+        file: (.path | ltrimstr($t)), line: .start.line, message: .extra.message}]' \
+        <run dir>/semgrep-raw.json > <run dir>/semgrep.json
+      ```
+
+   When one of these steps fails, record the error. The audit continues without semgrep.
+6. List the prompts. Include every `*.md` file in the directories from the table above. Exclude
    files whose name starts with `_`. Apply `only` and `skip` to the ids.
-6. Write `<run dir>/setup.json`:
+7. Write `<run dir>/setup.json`:
 
    ```json
    {
@@ -105,6 +128,8 @@ Do this yourself. Change no file inside the app checkout.
      "bench": "/abs/path/to/bench", "frameworkVersion": "16.0.0-dev",
      "dependencies": [{"app": "erpnext", "path": "/abs/path/to/bench/apps/erpnext"}],
      "inventory": "/abs/run/dir/inventory.json", "inventoryError": null,
+     "semgrep": "/abs/run/dir/semgrep.json", "semgrepRules": "/abs/run/dir/semgrep-rules",
+     "semgrepRulesCommit": "def5678", "semgrepError": null,
      "scans": ["S-A01", "Q-B05"], "checks": ["S-P01", "Q-K01"]
    }
    ```
@@ -204,7 +229,7 @@ Tell the user:
   report
 - the test site name, when the run kept one, so that the user can reproduce a finding
 - anything the run dropped: a failed agent, a candidate that a cap left unverified, a check that
-  was `not applicable`
+  was `not applicable`, a semgrep step that failed
 
 Do not copy the report into the reply. Do not propose fixes.
 
@@ -234,6 +259,11 @@ Inventory: <run dir>/inventory.json. It is large, so query it with jq. Its `view
 precomputed lists, and each entry point has its file, line, decorators, parameters, permission
 checks, and reachable sinks. It is a static approximation: read the real code before you report.
   (Without an inventory: "No inventory is available. Find candidates with rg.")
+
+Semgrep matches: <run dir>/semgrep.json, from the Frappe semgrep rules at <rules dir>. Each
+match has `rule`, `file`, `line`, and `message`. Query it with jq by `rule`. A match is a
+candidate, not a finding.
+  (Without semgrep: "No semgrep matches are available. Use the `## Find` section only.")
 
 Test site: <run dir>/site.json. Use it as the "Live test site" section of your conventions says.
 Administrator password: audit-admin-pw. Test users: <email / password / actor, one per line>.
@@ -379,7 +409,7 @@ Write these sections, in this order:
 - **Header.** The app, the commit, the Frappe version, how many scans and checks ran, and the
   count for each severity in each track. State how the findings were verified: on the live test
   site (name it, and state how many findings have a recorded result), or by reading the source
-  only.
+  only. Give the commit of the semgrep rules, or say that semgrep did not run.
 - **Environment.** Only when site.json has a key with `weakens: true`. Put it directly after the
   header. Name each key, list the findings that depend on it, and say that their proof does not
   show the behaviour of a normal site.
