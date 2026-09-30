@@ -79,6 +79,7 @@ current directory.
 | `jobs`: agents that run at the same time | `4` | `16` |
 | `max candidates`: verification cap for each scan | `15` | `15` |
 | `max verifications`: verification cap for the run | `600` | `600` |
+| `timeout`: hours before the run stops | `12` | `8` |
 
 "Only security" is `only: S-`. "Only correctness" is `only: Q-B`. "Only quality" is `only: Q-`.
 
@@ -247,22 +248,27 @@ lets verifiers send real requests. Without it, the audit reads the source only.
 
 ## 5. Run the tasks
 
-Start the script from the skill directory, in the background, and send its output to
+Start the script from the skill directory, detached from your harness, and send its output to
 `<run dir>/run.log`:
 
 ```
 mkdir -p <run dir>/tmp && [ -e <run dir>/tmp/last-check ] || touch <run dir>/tmp/last-check
-python <skill dir>/scripts/run_audit.py <run dir> --agents <agents file> --jobs <jobs> \
+setsid nohup python <skill dir>/scripts/run_audit.py <run dir> --agents <agents file> \
+  --jobs <jobs> --timeout <timeout> \
   --max-candidates <max candidates> --max-verifications <max verifications> \
-  [--only <prefix> ...] [--skip <prefix> ...] >> <run dir>/run.log 2>&1
+  [--only <prefix> ...] [--skip <prefix> ...] >> <run dir>/run.log 2>&1 < /dev/null &
 ```
+
+Do not run the script as a background command of your harness. A harness often stops a
+background command after a fixed time, for example 2 hours, and a run takes longer. The script
+has its own time limit, `--timeout`. At that limit, it stops its agents and exits.
 
 Start it once with `--dry-run` first. The dry run starts no agent. It shows the task list, the
 command of each task kind, and one full prompt of each kind. Read one prompt, and confirm that
 the site, the users, and the paths are correct.
 
-When your harness cannot run a long command in the background, or does not let you start agent
-processes, give the user the command, and stop. They run it, and ask you for the rest of the steps
+When your harness cannot start a detached process, or does not let you start agent processes,
+give the user the command, and stop. They run it, and ask you for the rest of the steps
 when it is complete.
 
 While the script runs, do not start agents. The script prints one line for each task that ends.
@@ -274,15 +280,18 @@ continues with the tasks that have no valid result.
 
 A run takes hours. Without updates, the user cannot tell a slow run from a stopped run. So check
 the progress every 10 to 15 minutes, until the script exits. Use a timer or a wake-up from your
-harness. When your harness has neither, tell the user how to watch the run themselves
+harness. The harness does not tell you when a detached script exits, so each wake-up must start
+the next one. When your harness has neither, tell the user how to watch the run themselves
 (`tail -f <run dir>/run.log`) and wait for the script to exit.
 
 Each check runs this, from the run directory:
 
 ```
+kill -0 "$(cat run.pid)" 2>/dev/null && echo "script: running" || echo "script: exited"
 grep -E '^(ok|FAIL) ' run.log | tail -n 1
 grep -vE '^(ok|FAIL) ' run.log | tail -n 5
-jq -r '"complete: \([.tasks[] | select(.ok)] | length), failed: \(.failed | length), verifications left in the cap: \(.verificationsLeft), site down: \(.siteDown)"' run.json
+jq -r '"complete: \([.tasks[] | select(.ok)] | length), failed: \(.failed | length), verifications left in the cap: \(.verificationsLeft), site down: \(.siteDown), timed out: \(.timedOut)"' run.json
+jq -r '"now: \(now | strflocaltime("%F %T")), updated: \(.updated), last progress: \(.lastProgress), deadline: \(.deadline)", (.running | to_entries[] | "attempt running since \(.value): \(.key)")' run.json
 find verdicts -name '*.json' -newer tmp/last-check -print0 | xargs -0r jq -r \
   'select(.verdict == "confirmed") | "\(.severity) \(input_filename | split("/")[1]): \(.finding.title)"'
 touch tmp/last-check
@@ -301,12 +310,32 @@ Tell the user in two or three lines:
 Read only these outputs. Do not open the scan and verdict files, and do not judge a finding: the
 report task does that.
 
+Each check must also confirm that the run makes progress:
+
+- **The script exited.** The last line of `run.log` is `=== exit <code>`. When it is not there,
+  the script crashed or was stopped. Tell the user the last lines of `run.log`, and start the
+  script again with the same arguments.
+- **The script does not answer.** The script updates `run.json` every minute. When `updated` is
+  more than 5 minutes old, the script is stuck. Stop it with `kill "$(cat run.pid)"`, which also
+  stops its agents, and start it again.
+- **No task ends.** The script stops an agent at the `timeout` of its agent profile, 1 hour in
+  `agents.example.json`. `last progress` is the end of the last agent attempt, or the start of
+  the script. So when `last progress`, or an attempt in `running`, is older than that timeout
+  plus 15 minutes, the run is stuck. Stop it and start it again, as above.
+  When the same stop occurs two times, stop the run, and tell the user.
+
+A restart continues with the tasks that have no valid result. It does not repeat complete tasks.
+
 The script stops when the test site stops answering, because a verifier reads the errors of a
 dead site as evidence. Start the site again, confirm it with step 4.8, and start the script
 again.
 
 The script exits with 0 when every task is complete. With 1, `run.json` lists the failed tasks.
 The report still ran, and names them.
+
+When `run.json` has `"timedOut": true`, the run reached its time limit, and the report did not
+run. Tell the user how many tasks are complete, and ask whether to continue. To continue, start
+the script again with the same arguments. Each start has a full `--timeout`.
 
 With `drop site`, and only for a site that this run created: stop `bench serve`, and run
 `bench drop-site <site> --force`.
