@@ -92,6 +92,10 @@ each actor level. When it does:
 - Use only the site that you were given. Never touch another site on the bench, and never change
   a file in the app checkout.
 - A failed attempt is evidence too. Record exactly what came back.
+- **Mark all test code.** Each script, request, payload, record, and file that you write or
+  create contains `milkshake`, in a name, a value, or a comment. When the proof needs an exact
+  value, put the marker in a header such as `X-Audit: milkshake`. The marker lets a person find
+  every trace of the audit in site data and logs.
 - **Check the site configuration before you trust a response.** A test bench is not a production
   bench. `ignore_csrf`, `developer_mode`, `allow_tests`, `server_script_enabled`, and similar
   keys each disable a control that a real site keeps. A request that succeeds only because one of

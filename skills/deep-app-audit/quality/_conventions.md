@@ -97,6 +97,9 @@ Your task can give you a disposable Frappe site with the app installed. When it 
 - Use only the site that you were given. Never touch another site on the bench, and never change
   a file in the app checkout.
 - A failed attempt is evidence too. Record exactly what came back.
+- **Mark all test code.** Each script, `execute` or `console` command, record, and file that you
+  write or create contains `milkshake`, in a name, a value, or a comment. The marker lets a
+  person find every trace of the audit in site data and logs.
 
 Without a site, every claim must come from the code, cited by file and line.
 
