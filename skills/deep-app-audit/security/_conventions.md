@@ -119,6 +119,25 @@ each actor level. When it does:
   any reasoning about what the code does.
 - A 403, a `PermissionError`, or a validation failure refutes the finding as reported. Name the
   control that produced it.
+- **For a read endpoint, the body decides the verdict, not the status.** A 200 is the normal
+  response. The finding stands only when the body holds a value that the actor must not see:
+  name that value. An empty 200, or a body with only the records of the actor, is an acquittal.
+  The site starts with no records, so an empty 200 before you create a record proves nothing in
+  either direction. Create a record as Administrator that the actor must not read, put a
+  distinct value in it, then look for that value in the body.
+- **Compare with the permissioned route.** In the same session, request the same record through
+  `/api/resource/<DocType>/<name>` or `frappe.client.get_list`. A 403 there, while your endpoint
+  returns the value, proves that a boundary was crossed. A 200 there means that the actor can
+  read it, and there is no finding.
+- **Show that a guard discriminates.** A refused request proves nothing when the request fails
+  for an unrelated reason. When you reject because a guard refused the actor, also send the
+  request as a user who has the right, and show that it succeeds. When each user fails, the
+  request is wrong, not the actor.
+- **A 500 is not a control.** An `AttributeError` or a `TypeError` that stops a payload is where a
+  type error happened to occur. Report the path that reaches it as it is.
+- **Read the live permissions.** A `Custom DocPerm` row on the site replaces the stock rows of its
+  doctype. When a verdict depends on who has a right, read the rows on the site, not only the
+  JSON in the checkout.
 - Prove the impact, do not maximise it. Read one record that you must not read. Do not destroy
   data, and never run a payload that leaves the machine. For SSRF and outbound scopes, point the
   payload at a local listener that you start yourself.
@@ -136,6 +155,9 @@ each actor level. When it does:
   them is set proves nothing about production. Your task tells you which of these are set. When a
   result depends on one, say so on the finding, keep only the part that stands without it, and
   state what must be tested again.
+- **The installed dependency is part of the configuration.** When a verdict depends on how a
+  dependency behaves, read the installed code in the environment of the bench, not the pin
+  (`_framework-guards.md` section 9).
 
 Without a site, every claim must come from the code, cited by file and line.
 
