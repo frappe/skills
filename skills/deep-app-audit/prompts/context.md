@@ -9,8 +9,12 @@ the bench, read-only: {{dependencies}}. Read their source when a verdict depends
 does. Change no file in any app on the bench.{{else}}The framework source is not available. Say so when a verdict depends on it.{{/if}}
 
 {{#if inventory}}Inventory: {{inventory}}. It is large, so query it with jq. Its `views` object holds precomputed
-lists, and each entry point has its file, line, decorators, parameters, permission checks, and
-reachable sinks. It is a static approximation: read the real code before you report.{{else}}No inventory is available. Find candidates with rg.{{/if}}
+lists, and each entry point has its file, line, decorators, parameters, permission checks,
+reachable sinks, and a `guard.class` that says how the framework covers it. Start from the views
+that narrow to shapes the framework does not guard, such as `unguarded_db_bypass_write`.
+`refuted_by_framework` lists entry points that the framework guards, each with `overridable_when`.
+`doctypes` holds the permlevel 0 permission rows of each DocType. It is a static approximation:
+read the real code before you report or reject.{{else}}No inventory is available. Find candidates with rg.{{/if}}
 
 {{#if semgrep}}Semgrep matches: {{semgrep}}, from the Frappe semgrep rules at {{semgrep_rules}}. Each match has
 `rule`, `file`, `line`, and `message`. Query it with jq by `rule`. A match is a candidate, not a

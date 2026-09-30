@@ -5,6 +5,20 @@ Usage:
 
 `--root` is the app repository checkout (default: current directory). `--module` is the
 Python package inside it that holds `hooks.py`; it is detected automatically when omitted.
+
+Beyond enumerating entry points, this builder encodes what the framework already checks, so a
+scanner is not left to rediscover it per candidate. Three products carry that:
+
+  * `doctypes`     — every DocType JSON's permission rows, resolved at permlevel 0 per right,
+                     with `admin_only` and `public_read` derived. See `_framework-guards.md` §6.
+  * `guard.class`  — how each entry point is guarded, including `doc_layer_only` (the framework
+                     checks it: `_framework-guards.md` §1) and `run_doc_method_read_gate` (§2a).
+  * `refuted_by_framework` — entry points a pattern search flags and the framework guards, each
+                     with the reason. These are non-findings. Read the reason before overriding.
+
+Everything here is static and therefore a prior, not a verdict: a live site can carry
+`Custom DocPerm` rows, `ignore_permissions` can be set by a caller several frames up, and the
+call-graph resolution is name-based. Read the real code before reporting anything.
 """
 
 import argparse
@@ -19,6 +33,7 @@ from collections import defaultdict
 ROOT = ""  # app repository checkout, set from the command line
 APP = ""  # the Python package inside ROOT that holds hooks.py
 DEST = ""  # output path for the inventory JSON
+EXTRA_DOCTYPE_ROOTS = []  # other app checkouts whose DocType permission rows to load
 DEFAULT_SKIP_DIRS = {"node_modules", ".git", "__pycache__", ".runs", "dist", "build"}
 SKIP_DIRS = set(DEFAULT_SKIP_DIRS)
 
@@ -37,7 +52,55 @@ SINKS = {
 	"auth": [r"\blogin_manager\b", r"\bfrappe\.local\.login_manager\b", r"\bset_user\b", r"\bupdate_password\b", r"\bfrappe\.set_user\b", r"\bgenerate_hash\b"],
 	"import_module": [r"\bfrappe\.get_attr\b", r"\bget_attr\b", r"\bimportlib\b", r"\bfrappe\.get_module\b", r"\bfrappe\.scrub\b.*import"],
 }
+
+# The categories above are coarse: `get_list` mixes the permissioned read with the unpermissioned
+# one, and `write` mixes the write the document layer checks with the write that bypasses it. Both
+# conflations produce false positives, so these finer categories exist alongside them. Sourced from
+# `_framework-guards.md` §1 and §3.
+REFINED_SINKS = {
+	# reads that apply no permission of their own
+	"read_unpermissioned": [
+		r"\bfrappe\.get_all\b", r"\bfrappe\.db\.get_all\b", r"\bfrappe\.db\.get_list\b",
+		r"\bfrappe\.db\.get_value\b", r"\bfrappe\.db\.get_values\b", r"\bfrappe\.db\.get_single_value\b",
+		r"\bfrappe\.db\.count\b", r"\bfrappe\.db\.exists\b", r"\bfrappe\.db\.sql\b",
+		r"\bfrappe\.db\.multisql\b", r"\bfrappe\.qb\.from_\b", r"\bfrappe\.get_cached_value\b",
+	],
+	# reads that do apply permissions
+	"read_permissioned": [r"\bfrappe\.get_list\b", r"\bfrappe\.client\.get_list\b", r"\bfrappe\.desk\.reportview\b"],
+	# the query builder's permission switch defaults to ignore_permissions=True. A query assembled
+	# from `frappe.qb.DocType(...)` and executed with `.run()` never goes near get_query at all, so
+	# it carries no permission of any kind — match that shape too.
+	"query_builder": [r"\bfrappe\.qb\.get_query\b", r"\bget_query\(", r"\bfrappe\.qb\.DocType\b",
+	                  r"\bqb\.DocType\(", r"\bqb\.Table\(",
+	                  r"\.run\(\s*\)", r"\.run\(\s*(as_dict|as_list|pluck|debug)\b"],
+	# writes the document layer checks for you: save/insert/submit/cancel/delete and the mapper
+	# Document methods take no positional arguments, so this skips `list.insert(0, x)` and the like
+	"write_doc_layer": [r"\.(?:insert|save|submit|cancel|delete)\(\s*(?:\)|\w+\s*=)",
+	                    r"\bfrappe\.delete_doc\b", r"\bget_mapped_doc\b"],
+	# writes that bypass the document layer entirely — the genuinely unguarded ones
+	"write_db_bypass": [r"\bfrappe\.db\.set_value\b", r"\bfrappe\.db\.set_single_value\b",
+	                    r"\.db_set\b", r"\.db_update\b", r"\bfrappe\.db\.delete\b",
+	                    r"\bfrappe\.db\.truncate\b", r"\bfrappe\.db\.rename_doc\b",
+	                    r"\bfrappe\.db\.bulk_insert\b", r"\bupdate_password\b"],
+	# a document loaded by name, the input side of most authorization findings
+	"doc_load": [r"\bfrappe\.get_doc\b", r"\bfrappe\.get_cached_doc\b", r"\bfrappe\.get_lazy_doc\b",
+	             r"\bfrappe\.get_last_doc\b", r"\bfrappe\.new_doc\b"],
+}
+SINKS.update(REFINED_SINKS)
 SINKS_RE = {k: [re.compile(p) for p in v] for k, v in SINKS.items()}
+
+# `frappe.qb.get_query(..., ignore_permissions=False)` is the permissioned form, and it authorizes
+# on `select`, not `read`.
+GET_QUERY_PERMISSIONED_RE = re.compile(r"ignore_permissions\s*=\s*False")
+# `@frappe.whitelist()` enforces scalar annotations through pydantic; a container annotation
+# guarantees only the container, and an unannotated parameter is not validated at all (§4).
+CONTAINER_TYPES = re.compile(r"^\s*(dict|list|tuple|set|Any|object|DynamicDict|_dict|frappe\._dict)\b|\bdict\b|\blist\b")
+# sinks that turn a caller-supplied name into an authorization decision — the operator-injection
+# shape of §4a
+NAME_TO_AUTH_SINK = re.compile(
+	r"\b(?:frappe\.get_doc|frappe\.get_cached_doc|frappe\.get_lazy_doc|frappe\.db\.get_value"
+	r"|frappe\.db\.exists|frappe\.db\.get_values|has_permission|check_permission)\s*\("
+)
 
 PERM_PATTERNS = {
 	"only_for": r"\bfrappe\.only_for\b|\bonly_for\(",
@@ -57,6 +120,87 @@ PERM_PATTERNS = {
 PERM_RE = {k: re.compile(v) for k, v in PERM_PATTERNS.items()}
 
 IGNORE_PERM_RE = re.compile(r"ignore_permissions\s*=\s*(True|1)\b|ignore_permissions=True|flags\.ignore_permissions\s*=\s*(True|1)\b")
+
+# frappe/permissions.py: AUTOMATIC_ROLES. Nobody grants these — `get_roles()` returns them for
+# every user of the matching type, so a right held by one of them is held by everyone, and a role
+# gap naming one is not a gap. See `_framework-guards.md` §6.
+AUTOMATIC_ROLES = {"Guest", "All", "Desk User", "Administrator"}
+# "All" and "Guest" reach Website Users too; "Desk User" reaches only System Users, so a grant to it
+# is public to desk users and not to a whitelisted call from a portal user.
+PUBLIC_ROLES = {"All", "Guest"}
+# frappe/permissions.py: std_rights
+RIGHTS = ("select", "read", "write", "create", "delete", "submit", "cancel", "amend",
+          "report", "export", "import", "share", "print", "email")
+
+
+def load_doctypes(root, source):
+	"""Every DocType defined under `root`, with its permission rows resolved per right.
+
+	The permission model is the difference between a role gap and a non-finding, and three of its
+	rules are easy to get wrong in a scanner (`_framework-guards.md` §6): permlevel > 0 governs
+	fields and never document access; the automatic roles cannot be a gap; and a child table carries
+	no permission rows at all. All three are resolved here so no prompt has to.
+
+	Call it once per checkout that matters. An app's endpoints routinely read doctypes the framework
+	or another installed app defines, and a doctype this builder has never seen cannot refute
+	anything — so pass `--doctypes-from <other app checkout>` for each of them.
+	"""
+	doctypes = {}
+	by_dir = {}
+	for dirpath, dirnames, filenames in os.walk(root):
+		dirnames[:] = [d for d in dirnames if d not in SKIP_DIRS]
+		if os.path.basename(os.path.dirname(dirpath)) != "doctype":
+			continue
+		for fn in filenames:
+			if not fn.endswith(".json"):
+				continue
+			path = os.path.join(dirpath, fn)
+			try:
+				with open(path, encoding="utf-8") as fh:
+					d = json.load(fh)
+			except (OSError, ValueError):
+				continue
+			if not isinstance(d, dict) or d.get("doctype") != "DocType" or not d.get("name"):
+				continue
+			istable = bool(int(d.get("istable") or 0))
+			perms = d.get("permissions") or []
+			# permlevel 0 is the only level that decides whether a document can be opened
+			level0 = [p for p in perms if not int(p.get("permlevel") or 0)]
+			roles_by_right = {}
+			for right in RIGHTS:
+				roles_by_right[right] = sorted({p.get("role") for p in level0
+				                                if p.get("role") and int(p.get(right) or 0)})
+			read_roles = set(roles_by_right["read"])
+			select_roles = set(roles_by_right["select"]) | read_roles  # read implies select in practice
+			entry = {
+				"name": d["name"],
+				"module": d.get("module"),
+				"source": source,
+				"file": os.path.relpath(path, root),
+				"istable": istable,
+				"issingle": bool(int(d.get("issingle") or 0)),
+				"read_only": bool(int(d.get("read_only") or 0)),
+				"is_submittable": bool(int(d.get("is_submittable") or 0)),
+				"is_tree": bool(int(d.get("is_tree") or 0)),
+				"has_web_view": bool(int(d.get("has_web_view") or 0)),
+				"permission_rows_total": len(perms),
+				"permission_rows_permlevel0": len(level0),
+				"roles_by_right_permlevel0": {k: v for k, v in roles_by_right.items() if v},
+				"if_owner_roles": sorted({p.get("role") for p in level0 if int(p.get("if_owner") or 0)}),
+				# nobody but Administrator holds read at permlevel 0 -> unreachable through
+				# run_doc_method, and not reachable by any role at all. A child table is not this:
+				# it carries no rows because the parent authorizes it, so exclude it explicitly.
+				"admin_only": not istable and bool(perms) and not (read_roles - {"Administrator"}),
+				# every logged-in user, Website Users included, is entitled to this by design
+				"public_read": bool(read_roles & PUBLIC_ROLES),
+				"desk_read": "Desk User" in read_roles,
+				"guest_read": "Guest" in read_roles,
+				"public_select": bool(select_roles & PUBLIC_ROLES),
+				"no_permission_rows": not perms,
+			}
+			doctypes[d["name"]] = entry
+			by_dir[os.path.basename(dirpath)] = d["name"]
+	return doctypes, by_dir
 
 
 def iter_py():
@@ -120,7 +264,7 @@ def literal(node):
 
 class FuncInfo:
 	__slots__ = ("qual", "file", "line", "endline", "name", "cls", "module", "decorators", "params",
-	             "src", "calls", "whitelist", "is_method")
+	             "src", "calls", "whitelist", "is_method", "string_annotations")
 
 
 def collect(path, module):
@@ -129,6 +273,10 @@ def collect(path, module):
 	except SyntaxError:
 		return [], {}
 	src_lines = open(path, encoding="utf-8").read().split("\n")
+	# transform_parameter_types skips str annotations, so this import turns off the whitelist's
+	# type validation for every function in the module
+	string_annotations = any(isinstance(n, ast.ImportFrom) and n.module == "__future__"
+	                         and any(a.name == "annotations" for a in n.names) for n in tree.body)
 	out = []
 	imports = {}
 	for n in ast.walk(tree):
@@ -149,6 +297,7 @@ def collect(path, module):
 		fi.line = node.lineno
 		fi.endline = getattr(node, "end_lineno", node.lineno)
 		fi.is_method = bool(cls)
+		fi.string_annotations = string_annotations
 		fi.decorators = [dec_name(d) for d in node.decorator_list]
 		fi.src = "\n".join(src_lines[node.lineno - 1: fi.endline])
 		params = []
@@ -247,7 +396,50 @@ def detect_app_package(root):
 	         "Pass --module to choose one.")
 
 
+def required_apps(app_dir):
+	"""`required_apps` from an app package's hooks.py; `org/repo` entries reduce to `repo`."""
+	try:
+		with open(os.path.join(app_dir, "hooks.py"), encoding="utf-8") as fh:
+			tree = ast.parse(fh.read())
+	except (OSError, SyntaxError):
+		return []
+	for node in tree.body:
+		if (isinstance(node, ast.Assign) and any(isinstance(t, ast.Name) and t.id == "required_apps" for t in node.targets)
+		    and isinstance(node.value, (ast.List, ast.Tuple))):
+			return [e.value.rstrip("/").split("/")[-1] for e in node.value.elts
+			        if isinstance(e, ast.Constant) and isinstance(e.value, str)]
+	return []
+
+
+def discover_dependency_checkouts(root, app_dir):
+	"""frappe and the transitive `required_apps`, found as siblings in `<bench>/apps`."""
+	apps_dir = os.path.dirname(root)
+	found, queue, seen = [], ["frappe"] + required_apps(app_dir), set()
+	while queue:
+		name = queue.pop(0)
+		if name in seen:
+			continue
+		seen.add(name)
+		checkout = os.path.join(apps_dir, name)
+		if not os.path.isdir(checkout) or os.path.samefile(checkout, root):
+			continue
+		found.append(checkout)
+		pkg = os.path.join(checkout, name)
+		queue.extend(required_apps(pkg if os.path.isdir(pkg) else checkout))
+	return found
+
+
 def main():
+	# the app's own doctypes, then every other checkout we were pointed at. The app's own
+	# definitions win a name collision: it is the one being audited.
+	doctypes, doctype_by_dir = {}, {}
+	for extra_root in reversed(EXTRA_DOCTYPE_ROOTS):
+		dts, by_dir = load_doctypes(extra_root, os.path.basename(extra_root.rstrip(os.sep)))
+		doctypes.update(dts)
+		doctype_by_dir.update(by_dir)
+	own, own_by_dir = load_doctypes(ROOT, os.path.basename(ROOT.rstrip(os.sep)))
+	doctypes.update(own)
+	doctype_by_dir.update(own_by_dir)
 	funcs = []
 	by_qual = {}
 	by_simple = defaultdict(list)
@@ -367,6 +559,118 @@ def main():
 			out.add(next(g for g in m.groups() if g))
 		return out
 
+	EXPLICIT_CHECKS = {"only_for", "has_permission", "check_permission", "only_has_select_perm",
+	                   "validate_permission", "has_website_permission"}
+	DATA_SINKS = {"read_unpermissioned", "read_permissioned", "write_doc_layer",
+	              "write_db_bypass", "doc_load", "sql", "query_builder"}
+
+	def owning_doctype(f):
+		"""The DocType whose controller this file is, if it is one.
+
+		A `<doctype>/<scrub>/<scrub>.py` module is that DocType's controller, so a whitelisted
+		method on it is reachable only through `run_doc_method` — which read-gates the parent
+		(`_framework-guards.md` §2a). The JSON beside it is authoritative for the name; the
+		directory name is scrubbed and cannot be unscrubbed reliably.
+		"""
+		parts = os.path.relpath(f.file, ROOT).split(os.sep)
+		if len(parts) >= 3 and parts[-3] == "doctype":
+			return doctype_by_dir.get(parts[-2])
+		return None
+
+	def classify_guard(f, d, sinks, perms, ignore_perm, kind, dt_owner):
+		"""How this entry point is guarded — and, where the framework guards it, say so.
+
+		The classes that matter for the false positive rate are `doc_layer_only` (§1) and
+		`run_doc_method_read_gate` (§2a): both look unguarded at the wrapper and are not. The
+		classes that matter for the true positive rate are `db_bypass_unguarded` and
+		`unpermissioned_read`.
+		"""
+		direct_sinks = d["sinks"]
+		explicit = sorted(d["perms"] & EXPLICIT_CHECKS)
+		explicit_deep = sorted((perms - d["perms"]) & EXPLICIT_CHECKS)
+		doc_layer = "write_doc_layer" in direct_sinks
+		bypass = "write_db_bypass" in direct_sinks
+		unperm_read = "read_unpermissioned" in direct_sinks
+		qb = "query_builder" in direct_sinks
+		g = {
+			"explicit_checks_in_body": explicit,
+			"explicit_checks_in_callees": explicit_deep,
+			"writes_through_document_layer": doc_layer,
+			"writes_bypassing_document_layer": bypass,
+			"reads_without_permission": unperm_read,
+			"reads_with_permission": "read_permissioned" in direct_sinks,
+			"uses_query_builder": qb,
+			# get_query defaults to ignore_permissions=True; when the call passes False it
+			# authorizes on `select`, not `read` (§3)
+			"query_builder_permissioned": bool(qb and GET_QUERY_PERMISSIONED_RE.search(f.src)),
+			"ignore_permissions": ignore_perm,
+			"search_input_decorator": "permission_decorator" in d["perms"],
+		}
+		if explicit:
+			g["class"] = "explicit_check"
+			g["note"] = "an explicit permission call is in the body — read whether it covers this actor and this object"
+		elif kind == "whitelisted_doctype_method":
+			g["class"] = "run_doc_method_read_gate"
+			g["note"] = ("reachable only through run_doc_method, which loads the document with "
+			             "check_permission=True: gated on read, NOT on write (§2a). The v2 route checks write for POST")
+			if dt_owner and doctypes.get(dt_owner, {}).get("admin_only"):
+				g["class"] = "unreachable_admin_only_doctype"
+				g["note"] = (f"{dt_owner} grants read at permlevel 0 to no role but Administrator, so "
+				             "run_doc_method refuses the document load before this body runs — not a finding")
+		elif ignore_perm:
+			g["class"] = "ignore_permissions"
+			g["note"] = "ignore_permissions is set on the path — trace which call it applies to"
+		elif bypass:
+			g["class"] = "db_bypass_unguarded"
+			g["note"] = "writes bypass the document layer with no explicit check in the body — a candidate"
+		# an unpermissioned read beside a document-layer write is the §1a shape, so it wins
+		elif unperm_read:
+			g["class"] = "unpermissioned_read"
+			g["note"] = "reads through a call that applies no permission — a candidate if the data is not the caller's"
+		elif doc_layer:
+			g["class"] = "doc_layer_only"
+			g["note"] = ("every write goes through save/insert/submit/cancel/delete or get_mapped_doc, "
+			             "which check permissions themselves (§1) — NOT a finding on its own. It is one "
+			             "only if a document it reads is not the document it writes (§1a)")
+		elif explicit_deep:
+			g["class"] = "check_in_callee"
+			g["note"] = "the only permission call is in a callee — confirm it covers this actor and object"
+		elif not (direct_sinks & DATA_SINKS):
+			# A thin wrapper that delegates to a helper has no sink of its own, and calling that
+			# "nothing to authorize" is how a real finding gets dropped: the sink is one frame down.
+			# Separate the two cases rather than collapsing them.
+			if sinks & DATA_SINKS:
+				g["class"] = "delegates"
+				g["note"] = ("no sink in the body, but its callees reach "
+				             + ", ".join(sorted(sinks & DATA_SINKS))
+				             + " — read the callee, and read what this wrapper passes it")
+			else:
+				g["class"] = "compute_only"
+				g["note"] = "no read or write sink in the body or its callees — nothing to authorize"
+		else:
+			g["class"] = "unclassified"
+			g["note"] = "read it"
+		return g
+
+	def container_params(f):
+		"""Parameters through which an operator payload can still arrive (§4).
+
+		A scalar annotation is enforced by pydantic, so `name: str` rejects a list with 417. A
+		`dict`/`list` annotation guarantees only the container, and an unannotated parameter is not
+		validated at all. A string annotation is skipped, and a default of another type widens the
+		accepted type.
+		"""
+		out = []
+		for p in f.params:
+			nm = p["name"].lstrip("*")
+			t = p.get("type")
+			unvalidated = t is None or f.string_annotations or t[:1] in ("'", '"')
+			if unvalidated or CONTAINER_TYPES.search(t) or isinstance(p.get("default"), (dict, list)):
+				out.append({"name": nm, "type": t, "validated": not unvalidated,
+				            "reaches_auth_sink": bool(re.search(
+					            NAME_TO_AUTH_SINK.pattern + r"[^)]{0,120}\b" + re.escape(nm) + r"\b", f.src))})
+		return out
+
 	def make_entry(f, kind, extra=None):
 		sinks, perms, ignore_perm, reached = transitive(f)
 		d = direct[f.qual]
@@ -402,8 +706,21 @@ def main():
 			"reads_form_dict": bool(re.search(r"form_dict|frappe\.local\.request|request\.(json|data|files|args|headers)|frappe\.request", f.src)),
 			"callee_count": len(reached),
 		}
+		dt_owner = owning_doctype(f)
+		e["doctype_owner"] = dt_owner
+		e["guard"] = classify_guard(f, d, sinks, perms, ignore_perm, kind, dt_owner)
+		e["container_params"] = container_params(f)
 		if extra:
 			e.update(extra)
+		# what the framework can tell us about the doctypes this entry point touches, so a scanner
+		# does not have to open every JSON to find out the data is public by design (§6). A child
+		# table does not count: reading one without its parent is the A07 finding.
+		touched = [dt for dt in e["doctypes_direct"] if dt in doctypes]
+		e["doctypes_known"] = touched
+		public = "guest_read" if e.get("allow_guest") else "public_read"
+		e["touches_only_public_doctypes"] = bool(touched) and all(
+			doctypes[dt][public] and not doctypes[dt]["istable"] for dt in touched)
+		e["touches_admin_only_doctype"] = [dt for dt in touched if doctypes[dt]["admin_only"]]
 		return e
 
 	for f in funcs:
@@ -597,10 +914,23 @@ def main():
 		"tests_included": sum(1 for e in entries if e.get("is_test")),
 		"unreferenced_whitelisted": sum(1 for e in entries if e.get("unreferenced")),
 		"guest_no_permission_check": sum(1 for e in entries if e.get("allow_guest") and not e.get("has_permission_check")),
+		"doctype_sources": [os.path.basename(ROOT.rstrip(os.sep))]
+		                   + [os.path.basename(x.rstrip(os.sep)) for x in EXTRA_DOCTYPE_ROOTS],
+		"doctypes_defined": len(doctypes),
+		"doctypes_admin_only": sum(1 for d in doctypes.values() if d["admin_only"]),
+		"doctypes_public_read": sum(1 for d in doctypes.values() if d["public_read"]),
+		"doctypes_child_tables": sum(1 for d in doctypes.values() if d["istable"]),
+		"by_guard_class": dict(sorted(
+			(k, sum(1 for e in entries if (e.get("guard") or {}).get("class") == k and not e.get("is_test")))
+			for k in {(e.get("guard") or {}).get("class") for e in entries} - {None})),
 	}
 
+	def whitelisted(e):
+		return e.get("kind", "").startswith("whitelisted")
+
 	def ids(pred):
-		return sorted(e["id"] for e in entries if not e.get("is_test") and pred(e))
+		return sorted(e["id"] for e in entries
+		              if not e.get("is_test") and e.get("guard") and pred(e))
 
 	views = {
 		"guest_no_permission_check": ids(lambda e: e.get("allow_guest") and not e.get("has_permission_check")),
@@ -616,12 +946,63 @@ def main():
 		"unreferenced_candidates_for_removal": ids(lambda e: e.get("unreferenced")),
 		"untyped_params": ids(lambda e: e.get("kind", "").startswith("whitelisted") and any(p.get("type") is None for p in e.get("params", []))),
 		"reads_form_dict": ids(lambda e: e.get("reads_form_dict") and e.get("kind", "").startswith("whitelisted")),
+
+		# --- views that narrow to what the framework does NOT guard ----------------------
+		# Start here rather than at `no_permission_check`: these are the shapes that survived
+		# the refutations in `_framework-guards.md`, so their false positive rate is the lowest
+		# in this file.
+		"unguarded_db_bypass_write": ids(lambda e: whitelisted(e) and e["guard"]["class"] == "db_bypass_unguarded"),
+		"unguarded_unpermissioned_read": ids(lambda e: whitelisted(e) and e["guard"]["class"] == "unpermissioned_read"
+		                                     and not e.get("touches_only_public_doctypes")),
+		"guest_unguarded_read_or_write": ids(lambda e: e.get("allow_guest")
+		                                     and e["guard"]["class"] in ("db_bypass_unguarded", "unpermissioned_read", "ignore_permissions")),
+		# §2a: run_doc_method gates read, not write. An instance method that writes is the gap.
+		"doc_method_writing_behind_read_gate": ids(lambda e: e.get("kind") == "whitelisted_doctype_method"
+		                                           and e["guard"]["class"] == "run_doc_method_read_gate"
+		                                           and (e["guard"]["writes_bypassing_document_layer"]
+		                                                or e["guard"]["writes_through_document_layer"])),
+		# §4a: a document name arriving through a container parameter and deciding authorization
+		"container_param_reaching_auth_sink": ids(lambda e: whitelisted(e)
+		                                          and any(p["reaches_auth_sink"] for p in e.get("container_params", []))),
+		# §3: the query builder's permission switch defaults to off
+		"query_builder_unpermissioned": ids(lambda e: whitelisted(e) and e["guard"]["uses_query_builder"]
+		                                    and not e["guard"]["query_builder_permissioned"]),
+		# §3/§6: these authorize on `select`. Compute their role gap on `select`, never on `read`.
+		"select_gated_search_queries": ids(lambda e: e["guard"]["search_input_decorator"]
+		                                   or (e["guard"]["uses_query_builder"] and e["guard"]["query_builder_permissioned"])),
+		"guest_reaching_doc_load": ids(lambda e: e.get("allow_guest") and "doc_load" in (e.get("sinks_direct") or [])),
 	}
 
+	# --- what the framework already guards ------------------------------------------
+	# A pattern search flags all of these and the framework covers every one. They are listed
+	# with their reason so a scanner can skip them knowingly rather than rediscover them one
+	# candidate at a time — and so that overriding one is a deliberate act with a reason to
+	# answer. See `_framework-guards.md` §1, §2a and §6.
+	refuted = []
+	for e in entries:
+		if e.get("is_test") or not e.get("guard"):
+			continue
+		g = e["guard"]
+		if g["class"] == "doc_layer_only":
+			refuted.append({"id": e["id"], "file": f"{e['file']}:{e['line']}", "rung": "guards §1",
+			                "reason": "every write goes through the document layer, which checks permissions itself",
+			                "overridable_when": "a document it reads is not the document it writes (§1a), or a caller sets ignore_permissions"})
+		elif g["class"] == "unreachable_admin_only_doctype":
+			refuted.append({"id": e["id"], "file": f"{e['file']}:{e['line']}", "rung": "guards §2a",
+			                "reason": f"run_doc_method read-gates {e.get('doctype_owner')}, which no role but Administrator can read",
+			                "overridable_when": "the deployment grants a role read on that doctype — a configuration choice, not a defect"})
+		elif whitelisted(e) and e.get("touches_only_public_doctypes") and g["class"] in ("unpermissioned_read", "compute_only"):
+			refuted.append({"id": e["id"], "file": f"{e['file']}:{e['line']}", "rung": "guards §6",
+			                "reason": "every doctype it reads grants read at permlevel 0 to All or Guest, so every caller of this endpoint is entitled to it by design",
+			                "overridable_when": "the response carries a field at permlevel > 0, or rows the caller's user permissions should have scoped"})
+	refuted.sort(key=lambda r: r["id"])
+
 	out = {
-		"schema": "frappe-endpoint-inventory/1",
+		"schema": "frappe-endpoint-inventory/2",
 		"summary": summary,
 		"views": views,
+		"refuted_by_framework": refuted,
+		"doctypes": doctypes,
 		"entry_points": entries,
 		"website_routes": routes,
 		"socketio_handlers": socket_handlers,
@@ -631,7 +1012,11 @@ def main():
 			"call_graph_depth": MAXDEPTH,
 			"resolution": "callee resolved by simple name across the app; ambiguous names (>6 defs) dropped",
 			"sinks_reachable": "union of direct sinks over the transitive callee set",
-			"has_permission_check": "regex presence of an explicit permission gate in the entry function or (weaker) its direct callees; presence is not proof of correctness",
+			"has_permission_check": "regex presence of an explicit permission gate in the entry function or (weaker) its direct callees; presence is not proof of correctness, and ABSENCE IS NOT A FINDING — see guard.class",
+			"guard": "how the framework covers this entry point. doc_layer_only and unreachable_admin_only_doctype are non-findings; db_bypass_unguarded and unpermissioned_read are candidates. Read _framework-guards.md before overriding one",
+			"doctypes": "permission rows from the DocType JSON in this checkout, resolved at permlevel 0. A live site can carry Custom DocPerm rows that differ, so this is a prior, not the site's answer",
+			"external_reference_count": "call sites found by grepping the name. NOT a reachability signal in either direction: a whitelisted dotted path is callable with zero references, and a reference found in a file is not proof that any form or user fires it",
+			"container_params": "parameters pydantic does not constrain to a scalar, so an operator payload can still arrive through them. reaches_auth_sink is a proximity match in the body, not dataflow — read the code",
 		},
 	}
 	with open(DEST, "w", encoding="utf-8") as fh:
@@ -640,13 +1025,20 @@ def main():
 
 
 def parse_args():
-	global ROOT, APP, DEST, SKIP_DIRS
+	global ROOT, APP, DEST, SKIP_DIRS, EXTRA_DOCTYPE_ROOTS
 	p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
 	p.add_argument("output", help="path to write the inventory JSON to")
 	p.add_argument("--root", default=os.getcwd(), help="app repository checkout (default: current directory)")
 	p.add_argument("--module", help="package inside the checkout holding hooks.py (default: detected)")
 	p.add_argument("--skip-dir", action="append", default=[], metavar="NAME",
 	               help="extra directory name to skip, repeatable")
+	p.add_argument("--doctypes-from", action="append", default=[], metavar="CHECKOUT",
+	               help="another app checkout whose DocType permission rows to load, repeatable. "
+	                    "The bench's frappe checkout and the target's required_apps are found beside "
+	                    "--root automatically; pass this for anything that lives elsewhere: a "
+	                    "doctype this builder has not seen cannot refute a finding about it")
+	p.add_argument("--no-discover", action="store_true",
+	               help="do not look for frappe and required_apps beside --root")
 	a = p.parse_args()
 	SKIP_DIRS = DEFAULT_SKIP_DIRS | set(a.skip_dir)
 	ROOT = os.path.abspath(a.root)
@@ -655,6 +1047,13 @@ def parse_args():
 	APP = os.path.join(ROOT, a.module or detect_app_package(ROOT))
 	if not os.path.isdir(APP):
 		sys.exit(f"Not a directory: {APP}")
+	extra = [os.path.abspath(x) for x in a.doctypes_from if os.path.isdir(x)]
+	if not a.no_discover:
+		extra += discover_dependency_checkouts(ROOT, APP)
+	EXTRA_DOCTYPE_ROOTS = [x for i, x in enumerate(extra) if x not in extra[:i] and x != ROOT]
+	is_framework = os.path.basename(APP.rstrip(os.sep)) == "frappe"
+	if not is_framework and not any(os.path.basename(x) == "frappe" for x in EXTRA_DOCTYPE_ROOTS):
+		print("warning: frappe doctypes not loaded; pass --doctypes-from <bench>/apps/frappe", file=sys.stderr)
 	DEST = os.path.abspath(a.output)
 
 

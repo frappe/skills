@@ -113,8 +113,11 @@ Do this yourself. Change no file inside the app checkout.
    python <skill dir>/scripts/build_inventory.py <run dir>/inventory.json --root <target>
    ```
 
-   The script is read-only. It needs no bench, no site, and no database. When it fails, record
-   the error. The audit continues without the inventory.
+   The script is read-only. It needs no bench, no site, and no database. It also loads the
+   DocTypes of `frappe` and of the apps that the target requires, when they are next to the
+   checkout in `<bench>/apps`. For each such app in another directory, add
+   `--doctypes-from <path>`. When it fails, record the error. The audit continues without the
+   inventory.
 5. Run the Frappe semgrep rules, unless the user gave `no semgrep`. The rules are the source of
    the `semgrep` field of the quality rules, so run them once here, not in each scan.
    1. Get semgrep. When `semgrep` is on `PATH`, use it. Else, when `uv` is on `PATH`, run
