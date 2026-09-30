@@ -54,6 +54,7 @@ const ADMIN_PASSWORD = 'audit-admin-pw'
 
 const TRACK_NAME = { security: 'Security', correctness: 'Correctness', customization: 'Customization' }
 const RANK = { Critical: 0, High: 1, Moderate: 2, Low: 3 }
+const bySeverity = (a, b) => (RANK[a.severity] ?? 9) - (RANK[b.severity] ?? 9)
 
 const NO_FIXES = `Never propose a fix, a patch, a remediation, or a "recommended fix". This audit
 reports what is wrong and what it affects. Deciding what to change is the maintainer's call,
@@ -665,7 +666,8 @@ const scanned = await pipeline(
 
 	(scan, s) => {
 		if (!scan) return { scope: s, coverage: 'scan agent failed', candidates: [], unverified: 0 }
-		const all = scan.candidates || []
+		// The cap must drop the least severe candidates, not the ones the finder listed last.
+		const all = [...(scan.candidates || [])].sort(bySeverity)
 		const take = Math.max(0, Math.min(all.length, MAX_CANDIDATES, verifyAllowance))
 		verifyAllowance -= take
 		const batch = all.slice(0, take)
@@ -714,7 +716,7 @@ const finalised = kept.map(c => ({
 	corrections: c.verdict.corrections,
 	envDependent: c.verdict.envDependent === true,
 	envCaveat: c.verdict.envCaveat,
-})).sort((a, b) => (RANK[a.severity] ?? 9) - (RANK[b.severity] ?? 9))
+})).sort(bySeverity)
 
 const coverage = rows.map(r => ({
 	id: r.scope.id,
