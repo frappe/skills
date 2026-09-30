@@ -1,3 +1,7 @@
+---
+id: K02
+area: dos-abuse
+---
 # K02 — Background job and scheduler abuse
 
 **Scope:** the queue as an attack surface.

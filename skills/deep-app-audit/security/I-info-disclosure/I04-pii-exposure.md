@@ -1,3 +1,7 @@
+---
+id: I04
+area: info-disclosure
+---
 # I04 — PII exposure
 
 **Scope:** personal data reachable beyond its intended audience.

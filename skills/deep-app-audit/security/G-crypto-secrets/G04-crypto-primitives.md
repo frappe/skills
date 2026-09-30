@@ -1,3 +1,7 @@
+---
+id: G04
+area: crypto-secrets
+---
 # G04 — Roll-your-own crypto and weak primitives
 
 **Scope:** every cryptographic operation the app performs itself.

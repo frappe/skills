@@ -1,3 +1,7 @@
+---
+id: G02
+area: crypto-secrets
+---
 # G02 — Secrets in logs, errors, and responses
 
 **Scope:** accidental egress of credentials.

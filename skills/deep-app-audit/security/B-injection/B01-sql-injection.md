@@ -1,3 +1,7 @@
+---
+id: B01
+area: injection
+---
 # B01 — SQL injection: string-built queries, unparameterisable components, second order
 
 **Scope:** every path where a request value or a stored value reaches SQL text. Three cases in

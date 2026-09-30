@@ -1,3 +1,7 @@
+---
+id: G01
+area: crypto-secrets
+---
 # G01 — Secret storage
 
 **Scope:** where credentials live.

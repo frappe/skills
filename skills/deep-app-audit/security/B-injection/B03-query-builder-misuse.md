@@ -1,3 +1,7 @@
+---
+id: B03
+area: injection
+---
 # B03 — Query Builder misuse
 
 **Scope:** `frappe.qb` usage where structure comes from the request.

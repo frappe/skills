@@ -1,3 +1,7 @@
+---
+id: A04
+area: authorization
+---
 # A04 — Guest endpoint surface and rate limiting
 
 **Scope:** every unauthenticated endpoint in the app, and the abuse limits on the endpoints an

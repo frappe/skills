@@ -1,3 +1,7 @@
+---
+id: D03
+area: auth-identity
+---
 # D03 — Two-factor authentication
 
 **Scope:** 2FA enrolment, verification, recovery, and the controls that claim to complement it.

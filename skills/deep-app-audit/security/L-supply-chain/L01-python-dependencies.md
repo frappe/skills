@@ -1,3 +1,7 @@
+---
+id: L01
+area: supply-chain
+---
 # L01 — Python dependency CVEs
 
 **Scope:** `pyproject.toml`, `requirements*.txt`, and the resolved environment.

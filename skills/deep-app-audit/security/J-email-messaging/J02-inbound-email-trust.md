@@ -1,3 +1,7 @@
+---
+id: J02
+area: email-messaging
+---
 # J02 — Inbound email trust
 
 **Scope:** what the app believes about mail it receives.

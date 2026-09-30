@@ -1,3 +1,7 @@
+---
+id: A09
+area: authorization
+---
 # A09 — REST API vs Desk parity
 
 **Scope:** data reachable through the generic API that the Desk UI never exposes.

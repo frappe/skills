@@ -1,3 +1,7 @@
+---
+id: H01
+area: business-logic
+---
 # H01 — Mass assignment / over-posting
 
 **Scope:** bulk field writes from a request payload.

@@ -1,3 +1,7 @@
+---
+id: H04
+area: business-logic
+---
 # H04 — Race conditions and idempotency
 
 **Scope:** check-then-act sequences under concurrency.

@@ -1,3 +1,7 @@
+---
+id: A12
+area: authorization
+---
 # A12 — Web Form, portal, and web view authorization
 
 **Scope:** the portal-facing document surface.

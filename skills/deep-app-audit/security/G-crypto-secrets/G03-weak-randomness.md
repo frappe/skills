@@ -1,3 +1,7 @@
+---
+id: G03
+area: crypto-secrets
+---
 # G03 — Weak randomness and secret generation
 
 **Scope:** how security-relevant values are generated.

@@ -1,3 +1,7 @@
+---
+id: A01
+area: authorization
+---
 # A01 — Whitelisted method authorization
 
 **Scope:** every `@frappe.whitelist()` function that reads or writes a document.

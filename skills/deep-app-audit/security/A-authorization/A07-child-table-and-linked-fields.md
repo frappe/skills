@@ -1,3 +1,7 @@
+---
+id: A07
+area: authorization
+---
 # A07 — Child table and linked-doctype permission
 
 **Scope:** reaching a parent document through a child row, or through dot-notation fields.

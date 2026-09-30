@@ -1,3 +1,7 @@
+---
+id: E04
+area: files-paths
+---
 # E04 — Static file serving
 
 **Scope:** how the web server and the app hand out files.

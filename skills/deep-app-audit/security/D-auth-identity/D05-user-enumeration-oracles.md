@@ -1,3 +1,7 @@
+---
+id: D05
+area: auth-identity
+---
 # D05 — User enumeration and side-channel oracles
 
 **Scope:** any response that differs based on the existence of a record the caller may not see.

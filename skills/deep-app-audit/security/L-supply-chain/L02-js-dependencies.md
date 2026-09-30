@@ -1,3 +1,7 @@
+---
+id: L02
+area: supply-chain
+---
 # L02 — JavaScript dependency CVEs
 
 **Scope:** every `package.json`, lockfile, and vendored JS file in the repo, frontend and

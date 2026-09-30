@@ -1,3 +1,6 @@
+---
+id: P01
+---
 # P01 — Endpoint hardening coverage
 
 **Kind:** posture check. It reports coverage over the whole endpoint surface. It does not hunt

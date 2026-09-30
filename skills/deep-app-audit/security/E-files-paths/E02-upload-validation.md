@@ -1,3 +1,7 @@
+---
+id: E02
+area: files-paths
+---
 # E02 — File upload validation
 
 **Scope:** what the app accepts as an upload.

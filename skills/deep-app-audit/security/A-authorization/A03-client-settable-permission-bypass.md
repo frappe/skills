@@ -1,3 +1,7 @@
+---
+id: A03
+area: authorization
+---
 # A03 — Client-settable permission-bypass parameters
 
 **Scope:** request-reachable arguments that turn permission enforcement off.

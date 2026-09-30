@@ -1,3 +1,7 @@
+---
+id: F03
+area: ssrf-outbound
+---
 # F03 — Open redirect
 
 **Scope:** redirect targets from the request.

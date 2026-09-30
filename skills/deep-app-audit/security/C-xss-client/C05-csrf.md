@@ -1,3 +1,7 @@
+---
+id: C05
+area: xss-client
+---
 # C05 — CSRF and unsafe-method semantics
 
 **Scope:** state-changing requests that a third-party page can trigger.

@@ -1,3 +1,7 @@
+---
+id: J03
+area: email-messaging
+---
 # J03 — Communication and comment permission
 
 **Scope:** the `Communication`, `Comment`, and `Notification Log` doctypes.

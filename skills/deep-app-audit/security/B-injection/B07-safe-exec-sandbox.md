@@ -1,13 +1,17 @@
+---
+id: B07
+area: injection
+---
 # B07 — `safe_exec` / `safe_eval` / Server Script sandbox
 
 **Scope:** the Python sandbox used by Server Script, Client-callable scripts, and dynamic
 evaluation helpers.
 
-**Applies to:** the framework repository for the sandbox itself. For an app checkout, audit
-the app's own `safe_eval` callers and any name the app adds to the sandbox globals.
-
 **Why:** the sandbox runs user-written code in the server process, so every addition to its
 globals widens what that code can reach.
+
+**Applies to:** the framework repository for the sandbox itself. For an app checkout, audit
+the app's own `safe_eval` callers and any name the app adds to the sandbox globals.
 
 ## Find
 - `rg -n "safe_exec|safe_eval|NamespaceDict|get_safe_globals|_getattr|_write_" --type py`

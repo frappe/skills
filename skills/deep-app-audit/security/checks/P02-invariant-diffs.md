@@ -1,3 +1,6 @@
+---
+id: P02
+---
 # P02 — Invariant diffs: guest endpoints, sandbox globals, DocType permissions
 
 **Kind:** posture check, meant to run per PR rather than as a periodic audit. It reports what

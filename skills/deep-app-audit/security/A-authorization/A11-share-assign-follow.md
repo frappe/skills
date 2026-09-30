@@ -1,3 +1,7 @@
+---
+id: A11
+area: authorization
+---
 # A11 — Sharing, assignment, follow, and notification side-channels
 
 **Scope:** the cross-user features that quietly widen access.

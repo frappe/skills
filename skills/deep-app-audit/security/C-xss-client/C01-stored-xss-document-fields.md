@@ -1,3 +1,7 @@
+---
+id: C01
+area: xss-client
+---
 # C01 — Stored XSS via document fields
 
 **Scope:** field values written by one user and rendered as HTML for another.

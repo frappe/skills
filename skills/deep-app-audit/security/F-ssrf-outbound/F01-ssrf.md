@@ -1,3 +1,7 @@
+---
+id: F01
+area: ssrf-outbound
+---
 # F01 — Server-Side Request Forgery and outbound TLS
 
 **Scope:** outbound connections where the destination is influenced by a request, or where

@@ -1,3 +1,7 @@
+---
+id: I01
+area: info-disclosure
+---
 # I01 — Over-fetching helper endpoints
 
 **Scope:** endpoints that return more than their name implies.

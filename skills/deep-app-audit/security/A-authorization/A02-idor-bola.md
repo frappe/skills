@@ -1,3 +1,7 @@
+---
+id: A02
+area: authorization
+---
 # A02 — IDOR / BOLA: object identity from the request
 
 **Scope:** whitelisted methods that take an object identifier and act on it without proving

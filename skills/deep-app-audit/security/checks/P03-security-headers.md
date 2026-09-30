@@ -1,3 +1,6 @@
+---
+id: P03
+---
 # P03 — Clickjacking, CSP, and security headers
 
 **Kind:** posture check. A missing header is a gap in the response, not a reachable defect, so

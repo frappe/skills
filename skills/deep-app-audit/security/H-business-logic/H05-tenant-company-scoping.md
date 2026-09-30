@@ -1,3 +1,7 @@
+---
+id: H05
+area: business-logic
+---
 # H05 — Multi-tenancy, company, and team scoping
 
 **Scope:** shared helpers that forget which tenant they are serving.

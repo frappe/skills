@@ -1,3 +1,7 @@
+---
+id: B04
+area: injection
+---
 # B04 — Multi-statement execution and SQL file primitives
 
 **Scope:** whether a single injection point can execute more than a `SELECT`.

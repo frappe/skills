@@ -1,3 +1,7 @@
+---
+id: H03
+area: business-logic
+---
 # H03 — Financial and quantity validation
 
 **Scope:** money, quantity, and entitlement values that cross a trust boundary.

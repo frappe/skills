@@ -1,3 +1,7 @@
+---
+id: F02
+area: ssrf-outbound
+---
 # F02 — Trusting client-supplied headers
 
 **Scope:** `Host`, `Origin`, `Referer`, `X-Forwarded-For`, `X-Forwarded-Host`, `X-Real-IP`.

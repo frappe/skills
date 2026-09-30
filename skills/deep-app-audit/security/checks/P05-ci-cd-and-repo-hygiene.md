@@ -1,3 +1,6 @@
+---
+id: P05
+---
 # P05 — CI/CD and repository hygiene
 
 **Kind:** posture check.

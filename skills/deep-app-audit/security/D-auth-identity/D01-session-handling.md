@@ -1,3 +1,7 @@
+---
+id: D01
+area: auth-identity
+---
 # D01 — Login and session handling
 
 **Scope:** session creation, storage, transport, and destruction.

@@ -1,3 +1,7 @@
+---
+id: B10
+area: injection
+---
 # B10 — Header, log, LDAP, Redis injection and unsafe deserialization
 
 **Scope:** the remaining injection sinks, grouped because each is individually rare here.

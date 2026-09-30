@@ -1,3 +1,7 @@
+---
+id: C04
+area: xss-client
+---
 # C04 — Untrusted iframes, SVG, and served HTML
 
 **Scope:** content executed in the app's origin because of how it is embedded or served.

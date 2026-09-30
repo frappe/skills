@@ -1,3 +1,7 @@
+---
+id: D04
+area: auth-identity
+---
 # D04 — OAuth 2.0 / OIDC / SSO
 
 **Scope:** the app as OAuth provider and as OAuth client.

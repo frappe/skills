@@ -1,3 +1,7 @@
+---
+id: B05
+area: injection
+---
 # B05 — Server-Side Template Injection
 
 **Scope:** user-controlled template *source* rendered by Jinja.

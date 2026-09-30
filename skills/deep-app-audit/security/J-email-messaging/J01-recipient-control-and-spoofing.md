@@ -1,3 +1,7 @@
+---
+id: J01
+area: email-messaging
+---
 # J01 — Recipient control and outbound spoofing
 
 **Scope:** who the app will send a message to, on whose behalf.

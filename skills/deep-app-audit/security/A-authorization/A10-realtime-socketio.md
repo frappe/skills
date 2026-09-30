@@ -1,3 +1,7 @@
+---
+id: A10
+area: authorization
+---
 # A10 — Realtime / SocketIO authorization
 
 **Scope:** socket event handlers, room joins, and server-side `publish_realtime` calls.

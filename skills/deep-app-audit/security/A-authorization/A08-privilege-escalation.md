@@ -1,3 +1,7 @@
+---
+id: A08
+area: authorization
+---
 # A08 — Privilege escalation paths
 
 **Scope:** any path from a lower role to a higher one.

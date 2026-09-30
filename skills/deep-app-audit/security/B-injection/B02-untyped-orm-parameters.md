@@ -1,3 +1,7 @@
+---
+id: B02
+area: injection
+---
 # B02 — Injection via untyped parameters into the ORM
 
 **Scope:** whitelisted methods that pass a request value straight into `get_all`, `get_list`,

@@ -1,3 +1,7 @@
+---
+id: A06
+area: authorization
+---
 # A06 — Permission query conditions and `has_permission` hooks
 
 **Scope:** the machinery that narrows list queries to what a user may see, and the registered

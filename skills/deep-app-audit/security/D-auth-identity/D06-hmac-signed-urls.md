@@ -1,3 +1,7 @@
+---
+id: D06
+area: auth-identity
+---
 # D06 — HMAC, signed URLs, and verified commands
 
 **Scope:** requests authenticated by a signature rather than a session.

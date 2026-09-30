@@ -1,3 +1,7 @@
+---
+id: C03
+area: xss-client
+---
 # C03 — Sanitizer bypasses
 
 **Scope:** the sanitisation helpers themselves.

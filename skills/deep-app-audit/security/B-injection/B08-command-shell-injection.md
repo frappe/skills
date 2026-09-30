@@ -1,3 +1,7 @@
+---
+id: B08
+area: injection
+---
 # B08 — Command and shell injection
 
 **Scope:** process execution with non-literal arguments.

@@ -1,3 +1,7 @@
+---
+id: I02
+area: info-disclosure
+---
 # I02 — Metadata, system-information, and error leaks
 
 **Scope:** information about the system rather than its records, including what an error tells

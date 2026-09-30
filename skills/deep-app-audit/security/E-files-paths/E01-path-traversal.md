@@ -1,3 +1,7 @@
+---
+id: E01
+area: files-paths
+---
 # E01 — Path traversal on read and write
 
 **Scope:** file reads, and file creation, move, rename, and delete, where any part of the path

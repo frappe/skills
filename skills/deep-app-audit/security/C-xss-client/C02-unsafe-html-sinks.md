@@ -1,16 +1,20 @@
+---
+id: C02
+area: xss-client
+---
 # C02 — Unsafe HTML sinks and Desk DOM XSS
 
 **Scope:** every frontend sink that injects markup — JS, Vue, and frappe-ui code, plus the Desk
 form, list, report, and workspace renderers.
 
-**Applies to:** the framework repository for the core Desk renderers. For an app checkout, audit
-only what the app adds: custom formatters, custom controls, DocType client scripts, report
-`formatter` functions, and any Desk page the app ships.
-
 **Why:** `v-html`, `innerHTML`, and equivalent sinks bypass framework escaping, including inside
 shared UI components. The Desk renderers are the same class of sink with a higher-privilege
 victim — they render arbitrary document data for System Managers, so a hit there is a path to
 Administrator.
+
+**Applies to:** the framework repository for the core Desk renderers. For an app checkout, audit
+only what the app adds: custom formatters, custom controls, DocType client scripts, report
+`formatter` functions, and any Desk page the app ships.
 
 ## Find — generic sinks
 - `rg -n "innerHTML|outerHTML|v-html|dangerouslySetInnerHTML|insertAdjacentHTML|document\.write" -g '*.js' -g '*.vue' -g '*.ts'`

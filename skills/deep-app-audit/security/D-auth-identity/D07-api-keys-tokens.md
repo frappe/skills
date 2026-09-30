@@ -1,3 +1,7 @@
+---
+id: D07
+area: auth-identity
+---
 # D07 — API key and token handling
 
 **Scope:** non-session credentials.

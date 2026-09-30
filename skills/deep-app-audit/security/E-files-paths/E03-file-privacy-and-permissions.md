@@ -1,3 +1,7 @@
+---
+id: E03
+area: files-paths
+---
 # E03 — File privacy defaults and access control
 
 **Scope:** the `File` doctype and everything that creates attachments.

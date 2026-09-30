@@ -1,3 +1,7 @@
+---
+id: D02
+area: auth-identity
+---
 # D02 — Password reset flow
 
 **Scope:** reset-key generation through password change.

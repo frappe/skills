@@ -1,3 +1,7 @@
+---
+id: I03
+area: info-disclosure
+---
 # I03 — Search and link-field leaks
 
 **Scope:** every search surface.

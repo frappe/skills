@@ -1,3 +1,7 @@
+---
+id: D08
+area: auth-identity
+---
 # D08 — Impersonation and `set_user`
 
 **Scope:** code that changes the acting identity, and data that records an author.

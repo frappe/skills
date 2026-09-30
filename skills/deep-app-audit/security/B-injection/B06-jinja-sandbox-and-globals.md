@@ -1,12 +1,16 @@
+---
+id: B06
+area: injection
+---
 # B06 — Jinja sandbox escape and dangerous template globals
 
 **Scope:** what is reachable from inside a template once SSTI or a legitimate template exists.
 
+**Why:** the Jinja sandbox is only as strong as the globals list exposed to it.
+
 **Applies to:** the framework repository for the sandbox itself. For an app checkout, audit
 the app's `jinja` hook entries and any template global the app registers — the sandbox core
 is out of scope, but every name the app adds to it is in scope.
-
-**Why:** the Jinja sandbox is only as strong as the globals list exposed to it.
 
 ## Find
 - The safe-globals definition for templates (in the framework, `<app>/utils/safe_exec.py`;

@@ -1,3 +1,6 @@
+---
+id: P04
+---
 # P04 — Version pinning and integrity
 
 **Kind:** posture check. It reports which dependencies are not determined by the repo, not which

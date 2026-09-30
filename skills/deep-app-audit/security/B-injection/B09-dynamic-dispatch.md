@@ -1,3 +1,7 @@
+---
+id: B09
+area: injection
+---
 # B09 — Dynamic dispatch: arbitrary callable from the request
 
 **Scope:** request-controlled function or module resolution.

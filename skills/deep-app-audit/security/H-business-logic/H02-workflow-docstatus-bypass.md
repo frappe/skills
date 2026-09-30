@@ -1,3 +1,7 @@
+---
+id: H02
+area: business-logic
+---
 # H02 — Workflow and document-state bypass
 
 **Scope:** the submit/cancel/amend lifecycle and workflow transitions.

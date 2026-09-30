@@ -1,3 +1,7 @@
+---
+id: K01
+area: dos-abuse
+---
 # K01 — Resource exhaustion
 
 **Scope:** single requests that consume disproportionate resources.

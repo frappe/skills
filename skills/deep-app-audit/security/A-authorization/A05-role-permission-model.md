@@ -1,3 +1,7 @@
+---
+id: A05
+area: authorization
+---
 # A05 — Role and permission model drift
 
 **Scope:** DocType permission JSON and role definitions, not Python.

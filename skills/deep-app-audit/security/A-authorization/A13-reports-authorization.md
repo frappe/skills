@@ -1,3 +1,7 @@
+---
+id: A13
+area: authorization
+---
 # A13 — Report and query-report authorization
 
 **Scope:** Query Report, Script Report, prepared reports, and report filters.
