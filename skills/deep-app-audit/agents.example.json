@@ -1,0 +1,34 @@
+{
+  "agents": {
+    "claude": {
+      "cmd": [
+        "claude", "-p", "{model_args}",
+        "--add-dir", "{target}", "{bench}", "{skill_dir}",
+        "--allowedTools", "Read,Grep,Glob,Write,Edit,Bash(rg:*),Bash(jq:*),Bash(curl:*),Bash(git -C {target} log:*),Bash(git -C {target} show:*),Bash(bench --site {site}:*)"
+      ],
+      "modelArgs": ["--model", "{model}"],
+      "timeout": 3600
+    },
+    "codex": {
+      "cmd": [
+        "codex", "exec", "{model_args}",
+        "--sandbox", "workspace-write",
+        "-c", "sandbox_workspace_write.network_access=true",
+        "--add-dir", "{bench}/logs", "--add-dir", "{bench}/sites/{site}",
+        "-"
+      ],
+      "modelArgs": ["--model", "{model}"],
+      "timeout": 3600
+    },
+    "opencode": {
+      "cmd": ["opencode", "run", "{model_args}", "{prompt}"],
+      "modelArgs": ["--model", "{model}"],
+      "timeout": 3600
+    }
+  },
+  "roles": {
+    "default": {"agent": "claude", "model": ""},
+    "verify": {"agent": "claude", "model": ""},
+    "report": {"agent": "claude", "model": ""}
+  }
+}
