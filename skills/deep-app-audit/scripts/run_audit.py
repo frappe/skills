@@ -2,7 +2,7 @@
 """Run the scan, verify, check, and report tasks of a deep-app-audit run.
 
 Usage:
-    python run_audit.py RUN_DIR --agents AGENTS.json [--jobs 16] [--dry-run]
+    python run_audit.py RUN_DIR --agents AGENTS.json [--jobs 16] [--timeout 8] [--dry-run]
 
 RUN_DIR must hold setup.json, and site.json when the run has a test site. The coordinator writes
 both files (SKILL.md, steps 1 to 4). This script does everything after that, with no model in the
@@ -12,11 +12,16 @@ queues a verifier for each candidate, applies the caps, and starts the report.
 The agent is any CLI that takes a prompt and can read files, run commands, and write a file.
 AGENTS.json maps each task kind to a command. See agents.example.json.
 
+The script stops at the --timeout limit, 8 hours by default. It writes its pid to RUN_DIR/run.pid,
+and it updates RUN_DIR/run.json every minute, so that a watcher can tell a slow run from a
+stopped run. Run it again to continue.
+
 The script uses the standard library only.
 """
 
 import argparse
 import asyncio
+import contextlib
 import heapq
 import itertools
 import json
@@ -261,6 +266,12 @@ class Run:
 		self.failed = []
 		self.site_down = False
 		self.ran = 0
+		self.deadline = time.time() + args.timeout * 3600
+		self.timed_out = False
+		self.running = {}
+		self.procs = set()
+		# The start counts as progress, so that a watcher does not read a restart as a stuck run.
+		self.last_progress = time.strftime("%F %T")
 		for sub in ("scans", "checks", "verdicts", "logs", "prompts", "tmp"):
 			(self.dir / sub).mkdir(exist_ok=True)
 
@@ -393,6 +404,7 @@ class Run:
 		prompt_file = self.dir / "prompts" / f"{task.slug}.md"
 		prompt_file.write_text(prompt)
 		argv, stdin, timeout, env = self.command(task, prompt_file, prompt)
+		timeout = max(1, min(timeout, self.deadline - time.time()))
 		log = self.dir / "logs" / f"{task.slug}.log"
 		with log.open("ab") as fh:
 			fh.write(f"\n=== {time.strftime('%F %T')} attempt {task.attempts} slot {slot}\n".encode())
@@ -406,15 +418,40 @@ class Run:
 				# A group of its own, so that a timeout also stops the tools that the agent started.
 				start_new_session=True,
 			)
+			self.procs.add(proc)
 			try:
 				await asyncio.wait_for(
 					proc.communicate(stdin.encode() if stdin is not None else None), timeout
 				)
 			except asyncio.TimeoutError:
-				os.killpg(proc.pid, signal.SIGKILL)
+				with contextlib.suppress(ProcessLookupError):
+					os.killpg(proc.pid, signal.SIGKILL)
 				await proc.wait()
-				fh.write(f"\n=== stopped after {timeout}s\n".encode())
+				fh.write(f"\n=== stopped after {round(timeout)}s\n".encode())
+			finally:
+				self.procs.discard(proc)
 		return proc.returncode
+
+	def past_deadline(self):
+		if time.time() >= self.deadline:
+			self.timed_out = True
+		return self.timed_out
+
+	def stop(self, signum):
+		"""The agents run in their own process groups, so they outlive this script unless it
+		stops them."""
+		for proc in list(self.procs):
+			with contextlib.suppress(ProcessLookupError):
+				os.killpg(proc.pid, signal.SIGKILL)
+		self.running.clear()
+		self.save_status()
+		print(f"=== stopped by signal {signum}", flush=True)
+		os._exit(128 + signum)
+
+	async def heartbeat(self):
+		while True:
+			await asyncio.sleep(60)
+			self.save_status()
 
 	# --- Site ---
 
@@ -484,8 +521,8 @@ class Run:
 
 	async def take(self):
 		async with self.cond:
-			while not self.queue:
-				if self.active == 0:
+			while not self.queue or self.past_deadline():
+				if self.active == 0 or self.past_deadline():
 					return None
 				await self.cond.wait()
 			self.active += 1
@@ -504,12 +541,17 @@ class Run:
 		problems, started = None, time.time()
 		uses_site = self.site and task.kind != "report"
 		while task.attempts < self.args.attempts:
+			if self.past_deadline():
+				problems = [f"the run reached its time limit of {self.args.timeout} hours"]
+				break
 			if uses_site and (self.site_down or not await self.wait_for_site()):
 				problems = ["the test site stopped answering, so the run stopped"]
 				break
 			task.attempts += 1
 			self.ran += 1
+			self.running[task.key] = time.strftime("%F %T")
 			code = await self.run_agent(task, slot, problems)
+			self.last_progress = time.strftime("%F %T")
 			if uses_site:
 				await self.reset(slot)
 			problems = task.problems(self.dir)
@@ -520,13 +562,15 @@ class Run:
 			problems.append(f"the agent exited with code {code}")
 			print(f"  {task.key}: attempt {task.attempts} invalid: {problems[0]}", file=sys.stderr)
 		ok = not problems
+		self.running.pop(task.key, None)
 		self.status[task.key] = {
 			"ok": ok,
 			"attempts": task.attempts,
 			"seconds": round(time.time() - started),
 			"problems": problems or [],
 		}
-		if not ok:
+		# A task that the time limit stopped did not fail. The next run does it again.
+		if not ok and not self.timed_out:
 			self.failed.append({"task": task.key, "problems": problems})
 		self.save_status()
 		return ok
@@ -547,8 +591,12 @@ class Run:
 	def save_status(self):
 		status = {
 			"updated": time.strftime("%F %T"),
+			"lastProgress": self.last_progress,
+			"deadline": time.strftime("%F %T", time.localtime(self.deadline)),
+			"running": self.running,
 			"verificationsLeft": self.verify_budget,
 			"siteDown": self.site_down,
+			"timedOut": self.timed_out,
 			"failed": self.failed,
 			"tasks": self.status,
 		}
@@ -599,6 +647,11 @@ class Run:
 		self.check_templates(tasks)
 		if self.args.dry_run:
 			return self.dry_run(tasks)
+		(self.dir / "run.pid").write_text(f"{os.getpid()}\n")
+		loop = asyncio.get_running_loop()
+		for signum in (signal.SIGTERM, signal.SIGINT, signal.SIGHUP):
+			loop.add_signal_handler(signum, self.stop, signum)
+		heartbeat = asyncio.create_task(self.heartbeat())
 
 		# Scans with a recorded fan-out go first, so the budget that they took is spent before
 		# a scan without a record takes its share.
@@ -616,20 +669,28 @@ class Run:
 			elif task.kind == "scan":
 				self.fan_out(task)
 		print(f"{len(self.queue)} tasks queued, {len(self.slots)} workers", flush=True)
+		self.save_status()
 		await asyncio.gather(*(self.worker(slot) for slot in self.slots))
 
 		report = Task("report", "report")
 		if self.site_down:
 			print("The test site stopped answering. Fix it, then run this script again.", file=sys.stderr)
+		elif self.timed_out:
+			print(
+				f"The run reached its time limit of {self.args.timeout} hours. Run this script again to continue.",
+				file=sys.stderr,
+			)
 		elif not self.args.no_report and (self.ran or not report.result(self.dir)):
 			# A report older than the newest result is stale.
 			ok = await self.execute(report, None)
 			print(f"{'ok  ' if ok else 'FAIL'} report", flush=True)
 
+		heartbeat.cancel()
+		self.save_status()
 		summary = self.summary()
 		(self.dir / "summary.json").write_text(json.dumps(summary, indent=1))
 		print(json.dumps(summary, indent=1))
-		return 1 if self.failed or self.site_down else 0
+		return 1 if self.failed or self.site_down or self.timed_out else 0
 
 	def dry_run(self, tasks):
 		"""Show the queue and one rendered prompt of each kind. Start no agent."""
@@ -651,6 +712,7 @@ def parse_args():
 	p.add_argument("--agents", type=Path, required=True, help="the agent commands, as in agents.example.json")
 	p.add_argument("--jobs", type=int, default=16, help="agents that run at the same time")
 	p.add_argument("--attempts", type=int, default=2, help="tries for each task")
+	p.add_argument("--timeout", type=float, default=8, help="hours before the run stops")
 	p.add_argument("--max-candidates", type=int, default=15, help="verification cap for each scan")
 	p.add_argument("--max-verifications", type=int, default=600, help="verification cap for the run")
 	p.add_argument("--only", nargs="*", default=[], help="id prefixes to run")
@@ -661,4 +723,7 @@ def parse_args():
 
 
 if __name__ == "__main__":
-	sys.exit(asyncio.run(Run(parse_args()).main()))
+	code = asyncio.run(Run(parse_args()).main())
+	# The coordinator starts the script detached, so this line is how it learns the exit code.
+	print(f"=== exit {code}", flush=True)
+	sys.exit(code)
