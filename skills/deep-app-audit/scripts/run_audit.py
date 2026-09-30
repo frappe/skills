@@ -2,7 +2,7 @@
 """Run the scan, verify, check, and report tasks of a deep-app-audit run.
 
 Usage:
-    python run_audit.py RUN_DIR --agents AGENTS.json [--jobs 8] [--dry-run]
+    python run_audit.py RUN_DIR --agents AGENTS.json [--jobs 16] [--dry-run]
 
 RUN_DIR must hold setup.json, and site.json when the run has a test site. The coordinator writes
 both files (SKILL.md, steps 1 to 4). This script does everything after that, with no model in the
@@ -649,7 +649,7 @@ def parse_args():
 	p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
 	p.add_argument("run_dir", type=Path)
 	p.add_argument("--agents", type=Path, required=True, help="the agent commands, as in agents.example.json")
-	p.add_argument("--jobs", type=int, default=8, help="agents that run at the same time")
+	p.add_argument("--jobs", type=int, default=16, help="agents that run at the same time")
 	p.add_argument("--attempts", type=int, default=2, help="tries for each task")
 	p.add_argument("--max-candidates", type=int, default=15, help="verification cap for each scan")
 	p.add_argument("--max-verifications", type=int, default=600, help="verification cap for the run")

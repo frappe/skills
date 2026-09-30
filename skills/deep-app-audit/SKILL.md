@@ -76,7 +76,7 @@ current directory.
 | `no semgrep`: do not run the semgrep rules | | semgrep runs |
 | `drop site`: drop the created site at the end | | keep it for triage |
 | `agents`: the agent commands file | `~/audit-agents.json` | `<run dir>/agents.json` |
-| `jobs`: agents that run at the same time | `4` | `8` |
+| `jobs`: agents that run at the same time | `4` | `16` |
 | `max candidates`: verification cap for each scan | `15` | `15` |
 | `max verifications`: verification cap for the run | `600` | `600` |
 
