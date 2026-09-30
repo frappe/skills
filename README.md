@@ -12,7 +12,7 @@ A collection of agent skills for building [Frappe Framework](https://frappeframe
 | `technical-writing` | Write documentation, READMEs, commits, pull requests, and release notes in Simplified Technical English |
 | `ui-design` | General UI/UX design principles |
 | `draft-security-advisory` | Write a publication-ready GitHub Security Advisory (GHSA) from a vulnerability report — Impact + Workarounds body, CVSS, CWE, versions, credits. User-invoked only: run `/draft-security-advisory` |
-| `deep-app-audit` | Multi-agent audit of a Frappe app for security, correctness, and customization defects. Every candidate is verified, and the result is one report. User-invoked only: run `/deep-app-audit <app path>` |
+| `deep-app-audit` | Multi-agent audit of a Frappe app for security, correctness, and customization defects. Every candidate is verified, and the result is one report. A script runs the tasks with any agent CLI. User-invoked only: run `/deep-app-audit <app path>` |
 
 ## Install
 

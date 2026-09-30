@@ -21,25 +21,41 @@ The id of a prompt is its track prefix and its file id: `security/A-authorizatio
 
 Both tracks work the same way. `security/_conventions.md` and `quality/_conventions.md` have the
 same sections, and each one is the contract for its track: the method, the finding bar, the
-severity ladder, the verification steps, and the finding format. The prompts in this file are
-the same for both tracks, and they point each agent to the conventions of its track.
+severity ladder, the verification steps, and the finding format. The task prompts in `prompts/`
+are the same for both tracks, and they point each agent to the conventions of its track.
 
-You are the coordinator. Do not audit the app yourself. You prepare the run, start one agent for
-each task, and track the result files.
+## How a run works
 
-## Agents
+A run has two parts:
 
-Each scan, each verification, each check, and the report runs in its own agent, with a fresh
-context. This is necessary: a verifier that saw the scan is not independent, and one context
-cannot hold 160 scans. Use the subagent feature of your agent harness. Run agents in parallel
-when the harness allows it.
+| Part | Who does it | Steps |
+|---|---|---|
+| Setup: the arguments, the target, the inventory, semgrep, the test site | you, the coordinator | 1 to 4 |
+| Tasks: the scans, the checks, the verifications, the report | `scripts/run_audit.py` | 5 |
 
-When your harness cannot start agents with a fresh context, tell the user. Offer a small run with
-the `only` option instead, done in sequence.
+Setup needs judgement: a bench is different on each machine, and an app has its own actors. So
+you do it. The tasks need no judgement to schedule, so a script schedules them. The script starts
+each task as a new process of an agent CLI, so each task has a fresh context. A verifier that saw
+the scan is not independent, and one context cannot hold 160 scans.
 
-Every agent writes its result to a file in the run directory, and returns only a one-line
-summary to you. You never need the full result in your own context. A task whose result file
-exists is complete, so a stopped run continues where it stopped.
+The script does not depend on one model or one harness. `agents.json` maps each task kind to a
+command, and a command can be any CLI that takes a prompt and can read files, run commands, and
+write a file. The scan and the verify tasks can use different models.
+
+The script:
+
+- runs the tasks in parallel, with one set of test users for each worker
+- queues the verifiers of a scan when the scan file lands, most severe first, within the caps
+- checks the format of each result file, and runs the task again when the file is missing or
+  wrong
+- runs the site reset command after each task, and stops when the site stops answering
+- writes `run.json` (the state of each task) and `summary.json` (the counts), and starts the
+  report when the tasks are complete
+
+Every task writes its result to a file in the run directory. A task whose result file is valid is
+complete, so a stopped run continues where it stopped when you start the script again.
+
+Do not audit the app yourself, and do not start task agents yourself.
 
 ## 1. Read the arguments
 
@@ -59,6 +75,8 @@ current directory.
 | `semgrep rules`: a local clone of `frappe/semgrep-rules` | `~/src/semgrep-rules` | clone into the run directory |
 | `no semgrep`: do not run the semgrep rules | | semgrep runs |
 | `drop site`: drop the created site at the end | | keep it for triage |
+| `agents`: the agent commands file | `~/audit-agents.json` | `<run dir>/agents.json` |
+| `jobs`: agents that run at the same time | `4` | `8` |
 | `max candidates`: verification cap for each scan | `15` | `15` |
 | `max verifications`: verification cap for the run | `600` | `600` |
 
@@ -70,9 +88,9 @@ Confirm that the path holds a Frappe app: one package in it holds `hooks.py`. If
 stop and tell the user.
 
 Tell the user in two or three lines what will run: the app, the tracks, whether a test site is
-created, and the approximate agent count. A full run is about 160 scan and check agents, plus one
-agent for each candidate. It can be several hundred agents. Do not ask for confirmation when the
-user gave the path and the options. The command is the opt-in.
+created, the agent CLI and the models, and the approximate agent count. A full run is about 160
+scan and check agents, plus one agent for each candidate. It can be several hundred agents. Do
+not ask for confirmation when the user gave the path and the options. The command is the opt-in.
 
 The test site needs write access to a bench. When the checkout is not in a bench, or the bench
 looks like production, use `no site` and say so.
@@ -119,8 +137,10 @@ Do this yourself. Change no file inside the app checkout.
 
    When one of these steps fails, record the error. The audit continues without semgrep.
 6. List the prompts. Include every `*.md` file in the directories from the table above. Exclude
-   files whose name starts with `_`. Apply `only` and `skip` to the ids.
-7. Write `<run dir>/setup.json`:
+   files whose name starts with `_`. Apply `only` and `skip` to the ids, and leave out the checks
+   with `no checks`.
+7. Write `<run dir>/setup.json`. `notes` is optional: facts about the app that every agent needs,
+   such as a product name that is different from the DocType name.
 
    ```json
    {
@@ -130,9 +150,15 @@ Do this yourself. Change no file inside the app checkout.
      "inventory": "/abs/run/dir/inventory.json", "inventoryError": null,
      "semgrep": "/abs/run/dir/semgrep.json", "semgrepRules": "/abs/run/dir/semgrep-rules",
      "semgrepRulesCommit": "def5678", "semgrepError": null,
-     "scans": ["S-A01", "Q-B05"], "checks": ["S-P01", "Q-K01"]
+     "scans": ["S-A01", "Q-B05"], "checks": ["S-P01", "Q-K01"],
+     "notes": "In the UI, the DocType Sales Invoice is called Bill."
    }
    ```
+8. Get the agent commands. With the `agents` option, use that file. Else, when
+   `<run dir>/agents.json` does not exist, copy `<skill dir>/agents.example.json` to it, and set
+   each role to the CLI of your own harness when the file has a profile for it. When the file has
+   no profile for your harness, or you do not know which CLI you run in, ask the user. The tools
+   that a profile allows are the tools that each task agent gets, so do not widen them.
 
 ## 4. Start the test site
 
@@ -148,327 +174,143 @@ lets verifiers send real requests. Without it, the audit reads the source only.
    owns that name. Else create it:
 
    ```
-   bench new-site <site> --admin-password audit-admin-pw --no-mariadb-socket [--db-root-password <pw>]
+   bench new-site <site> --admin-password audit-admin-pw [--db-root-password <pw>]
    ```
 
    The command must never stop at a prompt. When it fails, record the error and continue
    without a site. Never create, change, drop, or migrate another site.
 3. Install the apps that the target requires, then the target:
    `bench --site <site> install-app <app>`.
-4. Create one test user for each actor level, with the password `audit-user-pw`, `enabled = 1`,
-   and no onboarding or password-reset requirement:
-   - `milkshake-website@example.com`: Website User, no other role
-   - `milkshake-user@example.com`: plain System User, no other role
-   - `milkshake-manager@example.com`: System User and System Manager, to compare with what a
-     manager can already do
-5. Serve the site in the background: `bench serve --port 8199`, from the bench directory. When
+4. Create the test users. Each worker of the run gets its own set, so that a task can change its
+   users, and the reset after the task cannot disturb another task. Make `jobs` sets, numbered
+   from 0. Set `k` has these users, each with the password `audit-user-pw`, `enabled = 1`, and no
+   onboarding or password-reset requirement:
+   - `milkshake-s<k>-website@example.com`: Website User, no other role
+   - `milkshake-s<k>-user@example.com`: plain System User, no other role. When the framework
+     derives the user type from the roles, a user with no desk role is a Website User. Then
+     create one role `milkshake Desk User` with desk access and no permission, and give it that
+     role.
+   - `milkshake-s<k>-manager@example.com`: System User and System Manager, to compare with what
+     a manager can already do
+   - for each role that the app defines (the roles in the permissions of its DocTypes, pages,
+     and reports that the framework does not define): two users,
+     `milkshake-s<k>-<role slug>-a@example.com` and `-b@example.com`, with that role only. Two
+     users of one role let a verifier test access to the records of another user.
+
+   Record the roles that each user has after it is saved. App logic can add a role.
+5. Write the reset script, `<run dir>/reset_site.py`, and record its command. The run calls the
+   command after each task, with `{slot}` replaced by the set number. The script puts each user of
+   that set back to its recorded state: the roles, exactly, `enabled = 1`, the user type, and the
+   password. It also sets the Administrator password to `audit-admin-pw` again. It changes
+   nothing else, it finishes in seconds, and it does not use `bench console`. For example, run it
+   with the Python of the bench from `<bench>/sites`, and call `frappe.init` and
+   `frappe.connect` for the site. Run the command once for each set, and confirm that it exits
+   with 0.
+6. Serve the site in the background: `bench serve --port 8199`, from the bench directory. When
    the site needs a `Host` header, record it.
-6. Record the configuration that changes how a control behaves. Read
+7. Record the configuration that changes how a control behaves. Read
    `sites/common_site_config.json` and the `site_config.json` of the site. Record at least
    `ignore_csrf`, `developer_mode`, `allow_tests`, `server_script_enabled`,
    `disable_website_cache`, `maintenance_mode`, and every `*_disabled` or `allow_*` key, with its
    value. Mark each key whose value disables or loosens a control as `weakens: true`, with one
    line on the effect. A bench with `ignore_csrf: 1` accepts a cross-site request that
    production rejects, so a 200 from it proves nothing about production.
-7. Prove that the site works:
+8. Prove that the site works:
    - `curl -sS -o /dev/null -w '%{http_code}' <base url>/api/method/ping` returns 200
-   - a login as `milkshake-user@example.com` through `/api/method/login` returns 200 and sets a
-     cookie
+   - a login as `milkshake-s0-user@example.com` through `/api/method/login` returns 200 and sets
+     a cookie
    - `bench --site <site> list-apps` shows the app
 
    When a check fails, continue without a site. A site that half works is worse than no site,
    because verifiers read its errors as evidence.
-8. Write `<run dir>/site.json`:
+9. Write `<run dir>/site.json`. `slots` holds one list of users for each set, in set order.
+   `notes` holds what every agent must know about the site: for example, that it starts with no
+   records.
 
    ```json
    {
      "ready": true, "site": "myapp-audit.localhost", "baseUrl": "http://localhost:8199",
+     "hostHeader": "myapp-audit.localhost",
      "bench": "/abs/path/to/bench", "created": true, "apps": ["frappe", "myapp"],
-     "users": [{"email": "milkshake-user@example.com", "password": "audit-user-pw", "actor": "plain System User", "roles": []}],
-     "adminPassword": "audit-admin-pw", "notes": "needs Host header",
+     "adminPassword": "audit-admin-pw",
+     "slots": [[{"email": "milkshake-s0-user@example.com", "password": "audit-user-pw", "actor": "plain System User", "roles": ["milkshake Desk User"]}]],
+     "resetCommand": "cd /abs/path/to/bench/sites && ../env/bin/python /abs/run/dir/reset_site.py {slot}",
+     "notes": "The site starts with no records.",
      "config": [{"key": "ignore_csrf", "value": "1", "weakens": true, "effect": "CSRF is not checked"}]
    }
    ```
 
    Without a site, write `{"ready": false, "reason": "..."}`.
 
-## 5. Run the scans and the checks
+## 5. Run the tasks
 
-Start one agent for each scan and one agent for each check. They are independent, so start them
-all together when your harness allows it. Give each agent the context block and its prompt from
-"Prompts".
+Start the script from the skill directory, in the background:
 
-A scan writes `<run dir>/scans/<id>.json`. A check writes `<run dir>/checks/<id>.json`.
+```
+python <skill dir>/scripts/run_audit.py <run dir> --agents <agents file> --jobs <jobs> \
+  --max-candidates <max candidates> --max-verifications <max verifications> \
+  [--only <prefix> ...] [--skip <prefix> ...]
+```
 
-## 6. Verify each candidate
+Start it once with `--dry-run` first. The dry run starts no agent. It shows the task list, the
+command of each task kind, and one full prompt of each kind. Read one prompt, and confirm that
+the site, the users, and the paths are correct.
 
-When a scan file lands, read its candidates. Sort them by severity, most severe first. Verify at
-most `max candidates` of them, and at most `max verifications` in the full run. The caps drop the
-least severe candidates first. Record in the scan file how many candidates the caps left
-unverified, as `unverified`.
+When your harness cannot run a long command in the background, or does not let you start agent
+processes, give the user the command, and stop. They run it, and ask you for the rest of the steps
+when it is complete.
 
-Start one verification agent for each candidate that you keep, with the context block and the
-verify prompt. Verification of one scan can start while other scans still run. Candidate `n` of
-scan `<id>` writes `<run dir>/verdicts/<id>/<n>.json`, where `n` is its index in the scan file.
+While the script runs, do not read the result files, and do not start agents. The script prints
+one line for each task that ends. `<run dir>/run.json` has the state of each task, and
+`<run dir>/logs/<task>.log` has the output of each agent. When the script stops before the end,
+start it again with the same arguments. It continues with the tasks that have no valid result.
 
-## 7. Write the report
+The script stops when the test site stops answering, because a verifier reads the errors of a
+dead site as evidence. Start the site again, confirm it with step 4.8, and start the script
+again.
 
-When every scan, verification, and check is complete, start one report agent with the context
-block and the report prompt. Then, with `drop site`, and only for a site that this run created:
-stop `bench serve`, and run `bench drop-site <site> --force`.
+The script exits with 0 when every task is complete. With 1, `run.json` lists the failed tasks.
+The report still ran, and names them.
 
-## 8. Tell the user
+With `drop site`, and only for a site that this run created: stop `bench serve`, and run
+`bench drop-site <site> --force`.
 
-Tell the user:
+## 6. Tell the user
+
+Read `<run dir>/summary.json` and the header and summary table of `<run dir>/report.md`. Tell the
+user:
 
 - the path of the report and of the run directory
 - the confirmed candidate count for each track and severity, and the refuted and uncertain
-  counts. The report folds candidates by root cause, so it has fewer findings. Read the header of
-  the report for the distinct count.
+  counts, from `summary.json`. The report folds candidates by root cause, so it has fewer
+  findings. Read the header of the report for the distinct count.
 - the titles of the Critical and High findings, one line each, from the summary table of the
   report
 - the test site name, when the run kept one, so that the user can reproduce a finding
-- anything the run dropped: a failed agent, a candidate that a cap left unverified, a check that
+- anything the run dropped: a failed task, a candidate that a cap left unverified, a check that
   was `not applicable`, a semgrep step that failed
 
 Do not copy the report into the reply. Do not propose fixes.
 
-When the report agent fails, the run directory still holds every result. Tell the user, and offer
-to run the report step again.
+When the report task fails, the run directory still holds every result. Tell the user, and offer
+to start the script again. It runs only the report.
 
 ## Prompts
 
-Replace each `<...>` with its value. The track directory is `security` for an `S-` id and
-`quality` for a `Q-` id.
+The task prompts are templates in `prompts/`. The script fills them from `setup.json` and
+`site.json`, and saves each filled prompt in `<run dir>/prompts/<task>.md`.
 
-### Context block
+| Template | Used for |
+|---|---|
+| `context.md` | the start of every prompt: paths, bench, inventory, semgrep, site, users, rules |
+| `scan.md` | one scope or rule, which writes `scans/<id>.json` |
+| `verify.md` | one candidate, which writes `verdicts/<id>/<n>.json` |
+| `check.md` | one whole-surface check, which writes `checks/<id>.json` |
+| `report.md` | the report, which writes `report.md` |
 
-Put this block at the start of every scan, verify, check, and report prompt:
-
-```
-Skill directory: <skill dir>
-App checkout: <target>. It is read-only: change no file in it, and do not checkout, stash,
-or reset it.
-Run directory: <run dir>. setup.json holds the facts of this run.
-
-Bench: <bench>, Frappe <version>. The framework and the apps that the target needs are on the
-bench, read-only. Read their source when a verdict depends on what core does.
-  (Without a bench: "The framework source is not available. Say so when a verdict depends on it.")
-
-Inventory: <run dir>/inventory.json. It is large, so query it with jq. Its `views` object holds
-precomputed lists, and each entry point has its file, line, decorators, parameters, permission
-checks, and reachable sinks. It is a static approximation: read the real code before you report.
-  (Without an inventory: "No inventory is available. Find candidates with rg.")
-
-Semgrep matches: <run dir>/semgrep.json, from the Frappe semgrep rules at <rules dir>. Each
-match has `rule`, `file`, `line`, and `message`. Query it with jq by `rule`. A match is a
-candidate, not a finding.
-  (Without semgrep: "No semgrep matches are available. Use the `## Find` section only.")
-
-Test site: <run dir>/site.json. Use it as the "Live test site" section of your conventions says.
-Administrator password: audit-admin-pw. Test users: <email / password / actor, one per line>.
-This site sets <key=value, ...>, and each one weakens a control. A result that occurs only
-because of one of these keys is not proved for a normal site.
-  (Without a site: "No test site is available. Every claim must come from the code, cited by
-  file and line.")
-
-Never propose a fix, a patch, or a remediation. The audit reports what is wrong and what it
-affects. The fix is the decision of the maintainer, and a wrong suggestion costs more than a
-missing one.
-
-Put the marker `milkshake` in all test code that you write, run, or quote: each script, each
-`bench execute` or `console` command, each request, each payload, and each record or file that
-you create on the test site. Use it in a name, a value, or a comment, for example a record named
-`milkshake-po-1`, a parameter value `milkshake' OR 1=1`, or `# milkshake` in a script. The
-marker makes each trace of the audit easy to find in site data, logs, and report text. When the
-proof needs an exact value that cannot hold the marker, put the marker in a comment or a header
-of the same request, for example `X-Audit: milkshake`.
-```
-
-### Scan prompt
-
-```
-You audit a Frappe app for <track> defects. Your prompt is <id>, and only <id>.
-
-1. Read <skill dir>/<track dir>/_conventions.md. It governs everything below.
-2. Read <skill dir>/<track dir>/<file>. That is your prompt. Audit nothing outside it: another
-   agent has each other prompt.
-3. When the file has a `mechanism` field, read that page in <skill dir>/quality/mechanisms/.
-4. Follow the "Method" section of the conventions.
-
-Report each candidate that clears the finding bar of the conventions. An independent agent
-verifies each candidate after you, and tries to refute it. So:
-- Do not soften or drop a candidate that you believe. State it plainly.
-- Do not add weak candidates. A long list of weak candidates hides the real ones.
-- Cite the real file and line. The verifier reads the code, not your extract.
-
-When the file has an `Applies to:` line and the app does not match it, write an empty candidate
-list and say so in `coverage`. That is a correct result.
-
-Write <run dir>/scans/<id>.json:
-{
-  "audit": "milkshake",
-  "id": "<id>",
-  "coverage": "what you searched, what you did not search, what you could not resolve",
-  "candidates": [{
-    "title": "one line, no severity prefix",
-    "severity": "Critical | High | Moderate | Low",
-    "file": "path:line, relative to the app checkout",
-    "actor": "security only: who sends the request",
-    "input": "security only: the request-controlled value, and how it reaches the sink",
-    "trigger": "quality only: what starts the failure",
-    "failure": "quality only: what goes wrong",
-    "impact": "what the actor gets, or who carries the failure",
-    "proof": "the call chain or code path, 1 to 3 lines"
-  }]
-}
-Return one line: the id and the candidate count.
-```
-
-### Verify prompt
-
-```
-You are the independent verifier for one candidate <track> finding in a Frappe app. You did not
-find it. Another agent did, and it can be wrong. Your task is to try to refute it.
-
-Candidate <n> of <run dir>/scans/<id>.json. It was judged against
-<skill dir>/<track dir>/<file>.
-
-1. Read <skill dir>/<track dir>/_conventions.md, in particular "Known non-findings",
-   "Severity", and "Verify".
-2. Do the steps of the "Verify" section, in order.
-
-Default to `rejected` when you are not sure. Use `uncertain` only when the code is ambiguous,
-for example a dynamic dispatch that you cannot resolve, and say exactly what you could not
-resolve. A confirmed finding that is wrong costs the maintainer more than a rejected finding
-that is real.
-
-Write <run dir>/verdicts/<id>/<n>.json:
-{
-  "audit": "milkshake",
-  "verdict": "confirmed | rejected | uncertain",
-  "severity": "your own reading of the ladder",
-  "reasoning": "why it stands or falls, citing the code that you read",
-  "reachability": "the path to the defect, or why there is none",
-  "tested": true,
-  "evidence": "what you ran on the test site and what came back",
-  "envDependent": false,
-  "envCaveat": "the setting that the proof depends on, and what to test again without it",
-  "corrections": "what the candidate got wrong",
-  "finding": {"the candidate fields, with your corrections applied"}
-}
-Set `tested` to true only when you ran the proof on the test site.
-Return one line: the verdict and the severity.
-```
-
-### Check prompt
-
-```
-You run one whole-surface check over a Frappe app. Your check is <id>, and only <id>.
-
-A check is not a hunt for defects. It reports the whole surface: a percentage, a diff against a
-baseline, or a table. Nothing verifies it, so report only what you read yourself.
-
-1. Read <skill dir>/<track dir>/_conventions.md, in particular the "Files" section.
-2. Read <skill dir>/<track dir>/<file>. Follow its `## Output` section exactly. That table is
-   the deliverable.
-
-Report `not applicable` when the check needs a target that this run does not have: a GitHub
-organization, a DNS zone, a stored baseline, a core checkout. That is a correct result. Say in
-`notes` what you needed.
-
-When you find something that clears the finding bar of the conventions, put it in `findings`
-and name the scope or rule it belongs to. Nothing verifies these, so state them with care. A gap
-belongs in `gaps`, not in `findings`.
-
-When the check asks for a desired value (a header value, a DNS record, a default), give it. That
-is the only exception to the rule on fixes.
-
-Write <run dir>/checks/<id>.json:
-{
-  "audit": "milkshake",
-  "id": "<id>",
-  "status": "pass | gaps | fail | not applicable",
-  "summary": "two or three lines on the posture today",
-  "table": "the table from the Output section of the check, as Markdown",
-  "gaps": ["one line for each gap, most important first"],
-  "findings": [{"the scan candidate fields, and belongsTo: the scope or rule id"}],
-  "notes": "what you could not reach, and why"
-}
-Return one line: the id and the status.
-```
-
-### Report prompt
-
-```
-Compile one deep audit report for the Frappe app <app>. Write it to <run dir>/report.md.
-
-The results are in <run dir>. Query them with jq, not by reading them whole:
-- setup.json and site.json: the facts of the run.
-- scans/<id>.json: the candidates and the coverage of each scan, and `unverified`, the count
-  that a cap left unverified.
-- verdicts/<id>/<n>.json: the verdict on candidate n of scan <id>. Use `finding` from the
-  verdict, not the candidate. Drop every `rejected` verdict.
-- checks/<id>.json: the result of each whole-surface check.
-
-Each track has its finding format in the "Output" section of its conventions:
-<skill dir>/security/_conventions.md for S- ids, and <skill dir>/quality/_conventions.md for
-Q- ids. Read a prompt file when you need its title or its intent.
-
-Start the report with this line, exactly, with the values filled in:
-
-<!-- milkshake deep-app-audit run=<run dir name> app=<app> commit=<short hash> -->
-
-Write these sections, in this order:
-
-- **Header.** The app, the commit, the Frappe version, how many scans and checks ran, and the
-  count for each severity in each track. State how the findings were verified: on the live test
-  site (name it, and state how many findings have a recorded result), or by reading the source
-  only. Give the commit of the semgrep rules, or say that semgrep did not run.
-- **Environment.** Only when site.json has a key with `weakens: true`. Put it directly after the
-  header. Name each key, list the findings that depend on it, and say that their proof does not
-  show the behaviour of a normal site.
-- **Summary.** One table of all distinct confirmed findings in all tracks, most severe first:
-  number, severity, track, title, and the ids that found it.
-- **Security findings**, **Correctness findings**, **Customization findings.** The confirmed
-  findings of each track, most severe first, in the format of the track, with the numbers of the
-  summary table. When a section is empty, say so in one line.
-- **Unresolved.** The `uncertain` verdicts, by track, each with the question that the verifier
-  could not settle.
-- **Raised by a check, not verified.** The `findings` of the checks. Say in one line that nothing
-  tried to refute them. Never merge them into the confirmed lists.
-- **Appendix: coverage.** One table for each track: each id, its title, candidates, confirmed,
-  and what it searched and did not search. Name each scan with unverified candidates.
-- **Appendix: checks.** One subsection for each check, by track, with its status, its summary,
-  and its table as written. List the `not applicable` checks in one line at the end, with the
-  reason.
-- **Footer.** End the report with these two lines, exactly, with the values filled in:
-
-  ---
-  Generated by deep-app-audit (milkshake) for <app> at <short hash>.
-
-Fold by root cause, not by wording. Prompts overlap on purpose: one missing permission hook can
-arrive as ten candidates, and one check-then-insert can arrive from a security scope and a
-correctness rule. Two entries are the same finding when a fix to one line fixes both. Merge them,
-list every id that found it, and keep the strongest statement and the best evidence. When the
-entries come from different tracks, put the finding in the track of the highest severity, and
-name the other track in one line. For a finding that more than two prompts found, state
-`found independently by N prompts`. When the merged entries have different severities, take the
-highest and state the range in one line.
-
-State the distinct count as the headline, with the raw count next to it:
-`N findings (M confirmed candidates before folding)`.
-
-Rules:
-- Report only what is in the results. Do not add findings, and do not audit the app again.
-- Do not change the severity that the verdict gives.
-- Do not add text to fill space. When a severity band is empty, say so in one line.
-- A gap from a check is not a finding. Keep the two apart everywhere.
-- For a quality finding, give its rule id. The rule shows the accepted practice.
-- Keep a desired value that a check table records. Propose no other fix.
-
-Return one line: the path of the report and the distinct count for each track and severity.
-```
+`{{name}}` is a value. `{{#if name}}...{{else}}...{{/if}}` keeps one part when the value is set.
+The script stops at the start when a template names a value that it does not know. When you
+change the result format in a template, change the check in `validate()` in `run_audit.py` too.
 
 ## Warning
 
