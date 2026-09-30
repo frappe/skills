@@ -69,7 +69,7 @@ and `pre-commit run --files <changed files>`.
 
 Spawn one `general-purpose` agent, `run_in_background: false`:
 
-> Load the `quality-code-review` skill and review the working diff (`git diff` plus any
+> Load the `frappe-code-review` skill and review the working diff (`git diff` plus any
 > untracked files it adds). The change is meant to fix this bug:
 >
 > <paste the Symptom and Expected lines from step 1>

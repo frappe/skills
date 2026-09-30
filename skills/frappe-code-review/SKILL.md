@@ -1,5 +1,5 @@
 ---
-name: quality-code-review
+name: frappe-code-review
 description: >-
   Review code for any Frappe application — a checklist distilled from years of
   engineering practice on correctness, security, performance, concurrency,
