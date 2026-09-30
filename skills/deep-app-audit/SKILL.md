@@ -244,12 +244,14 @@ lets verifiers send real requests. Without it, the audit reads the source only.
 
 ## 5. Run the tasks
 
-Start the script from the skill directory, in the background:
+Start the script from the skill directory, in the background, and send its output to
+`<run dir>/run.log`:
 
 ```
+mkdir -p <run dir>/tmp && [ -e <run dir>/tmp/last-check ] || touch <run dir>/tmp/last-check
 python <skill dir>/scripts/run_audit.py <run dir> --agents <agents file> --jobs <jobs> \
   --max-candidates <max candidates> --max-verifications <max verifications> \
-  [--only <prefix> ...] [--skip <prefix> ...]
+  [--only <prefix> ...] [--skip <prefix> ...] >> <run dir>/run.log 2>&1
 ```
 
 Start it once with `--dry-run` first. The dry run starts no agent. It shows the task list, the
@@ -260,10 +262,41 @@ When your harness cannot run a long command in the background, or does not let y
 processes, give the user the command, and stop. They run it, and ask you for the rest of the steps
 when it is complete.
 
-While the script runs, do not read the result files, and do not start agents. The script prints
-one line for each task that ends. `<run dir>/run.json` has the state of each task, and
-`<run dir>/logs/<task>.log` has the output of each agent. When the script stops before the end,
-start it again with the same arguments. It continues with the tasks that have no valid result.
+While the script runs, do not start agents. The script prints one line for each task that ends.
+`<run dir>/run.json` has the state of each task, and `<run dir>/logs/<task>.log` has the output of
+each agent. When the script stops before the end, start it again with the same arguments. It
+continues with the tasks that have no valid result.
+
+### Tell the user the progress
+
+A run takes hours. Without updates, the user cannot tell a slow run from a stopped run. So check
+the progress every 10 to 15 minutes, until the script exits. Use a timer or a wake-up from your
+harness. When your harness has neither, tell the user how to watch the run themselves
+(`tail -f <run dir>/run.log`) and wait for the script to exit.
+
+Each check runs this, from the run directory:
+
+```
+grep -E '^(ok|FAIL) ' run.log | tail -n 1
+grep -vE '^(ok|FAIL) ' run.log | tail -n 5
+jq -r '"complete: \([.tasks[] | select(.ok)] | length), failed: \(.failed | length), verifications left in the cap: \(.verificationsLeft), site down: \(.siteDown)"' run.json
+find verdicts -name '*.json' -newer tmp/last-check -print0 | xargs -0r jq -r \
+  'select(.verdict == "confirmed") | "\(.severity) \(input_filename | split("/")[1]): \(.finding.title)"'
+touch tmp/last-check
+```
+
+The last two commands show only the findings that were confirmed after the previous check, so no
+finding is told twice, also after a restart.
+
+Tell the user in two or three lines:
+
+- the counts: complete, queued, running, and failed tasks
+- each new confirmed finding, one line each, with the severity and the id. Say that a person must
+  still confirm it.
+- a problem: a failed task, a failed reset, or a site that stopped answering
+
+Read only these outputs. Do not open the scan and verdict files, and do not judge a finding: the
+report task does that.
 
 The script stops when the test site stops answering, because a verifier reads the errors of a
 dead site as evidence. Start the site again, confirm it with step 4.8, and start the script
