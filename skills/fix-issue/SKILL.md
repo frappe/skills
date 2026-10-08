@@ -1,6 +1,6 @@
 ---
 name: fix-issue
-description: Fix a bug reported in a GitHub issue or a markdown file, without letting the report's noise and guesses into the main context. Takes an issue number, an issue URL, or a file path as an argument. Use when asked to fix, investigate, or reproduce a reported bug.
+description: Fix a bug or a security vulnerability reported in a GitHub issue or a markdown file, without letting the report's noise and guesses into the main context. Takes an issue number, an issue URL, or a file path as an argument. A security report is fixed on every release line of the app. Use when asked to fix, investigate, or reproduce a reported bug or vulnerability.
 disable-model-invocation: true
 ---
 
@@ -32,19 +32,34 @@ through unchanged:
 > - **Environment** — version, branch, database, browser, deployment type.
 > - **Scope** — always or intermittent, one user or all, when it started.
 >
+> When the report describes a way to read, change, or run something the actor should not, also
+> include:
+> - **Actor** — the account or role the attacker used: Guest, Website User, a desk role.
+> - **Request** — the exact HTTP request, endpoint path, method, and payload. Verbatim.
+> - **Effect** — what the attacker got: the data returned, the record changed, the code run.
+> - **References** — advisory, CVE, or GHSA ids the report states.
+>
 > Exclude: any proposed fix, patch, or PR link; any guess at the cause or any file,
 > function, or commit the reporter suspects; "I think" / "probably" / "it looks like"
 > clauses; severity, urgency, blame, +1s, greetings, bot comments; repeated restatements
 > of the symptom.
 >
-> A traceback is evidence — keep it, though it names files. A commenter writing "the bug
-> is in x.py" is a guess — drop it.
+> A traceback is evidence — keep it, though it names files. So is the endpoint in a proof of
+> concept request. A commenter writing "the bug is in x.py" or "add a permission check" is a
+> guess — drop it.
 >
 > End with **Gaps**: what a reproduction needs that the report does not give. "none" if
 > complete.
 >
 > Do not read the codebase, verify anything, or offer an opinion. Under 400 words plus
 > verbatim blocks.
+
+## Security reports
+
+When the brief has an **Actor** and a **Request**, the report is a security vulnerability. Follow
+[security/workflow.md](security/workflow.md) from its step 1, with this brief, in place of steps 2
+to 6. It fixes every release line of the app in parallel and keeps the flaw out of public text until
+a release carries the fix.
 
 ## 2. Reproduce before you fix
 
