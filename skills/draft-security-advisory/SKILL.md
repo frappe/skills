@@ -6,7 +6,7 @@ disable-model-invocation: true
 
 # GitHub Security Advisory Writer
 
-Turn the vulnerability report the user provides into a publication-ready GitHub Security Advisory (GHSA): a terse two-section body, with the precision carried by GitHub's structured form fields.
+Turn the vulnerability report the user provides into a publication-ready GitHub Security Advisory (GHSA): terse text in each of the form's text fields, with the precision carried by GitHub's structured fields.
 
 ## Class, not instance
 
@@ -21,38 +21,37 @@ Pick the established pattern that fits; when an earlier advisory for the same pr
 - Outcome-led: `{Outcome} via {class}` — e.g. `Account takeover via Reflected XSS`
 - Feature-scoped: `{Class} in {feature area}` — a last resort, only when none of the patterns above fit; never to make a title unique, since identical titles across advisories are fine. Generalize the feature area so the exact feature stays unrevealed: name an umbrella surface one level broader than where the flaw sits (e.g. "portal pages", not the specific portal), never a module, screen, or record type.
 
-## Advisory body
+## Text fields
 
-Exactly two sections:
+GitHub's form has four required text fields, in this order. Every one is published, so the class-not-instance rule binds all four — including Details and Proof of concept, whatever their placeholder text asks for.
 
-```markdown
-### Impact
-{One or two sentences: where the flaw sits, at class level; what control
-was missing; what the attacker gains and the minimum privilege needed.}
+Give each field its own job, so the four never repeat each other:
 
-### Workarounds
-No workaround available; upgrading is required.
-```
+| Field | Contents |
+|---|---|
+| **Summary** | One line: the flaw class and the umbrella surface it sits in ("portal pages", "certain endpoints"). |
+| **Details** | Two to four sentences: the missing or broken control, the preconditions (authenticated or not, kind of role), what the fix does in general terms ("validation was added"), and which release lines are affected. End with the workaround line: "No workaround available; upgrading is required." Amend it only when a real workaround exists. |
+| **Proof of concept** | The attack shape in general terms, e.g. "An authenticated user with a low-privilege role sends a crafted request to an affected endpoint." No payload, endpoint name, or field name. |
+| **Impact** | What the attacker gains, who is exposed, and the minimum privilege needed. |
 
-Reuse the stock Impact sentence when the class has one:
+Reuse the stock sentence when the class has one, splitting it across Summary and Impact:
 
 - SQL injection: "Some endpoints were vulnerable to SQL injection through specially crafted requests, which would allow a malicious actor to extract sensitive information."
 - Missing authorization: "Certain endpoints failed to enforce proper authorization checks, allowing users to modify data beyond their permitted role."
 
-For other classes, write the sentence in the same register: "{Class} through {vague vector} allows {an authenticated user / a malicious user} to {capability}." Amend the Workarounds line only when a real workaround exists.
+For other classes, write in the same register: "{Class} through {vague vector} allows {an authenticated user / a malicious user} to {capability}."
 
-## Form fields
+## Structured fields
 
-After the body, list the values for GitHub's advisory form:
+After the text fields, list the values for the rest of the form:
 
-- **Ecosystem / package:** the project's ecosystem and package name
-- **Affected / patched versions:** one row per currently supported release stream — ask the user which streams are supported if not stated in the report; affected `< {first fixed release}`, patched `{first fixed release}`
-- **CVSS:** v3.1 vector and score, derived from the rules below, with a one-sentence rationale for each non-obvious metric choice (PR, S, C, I)
-- **Severity:** the band the score falls in
+- **CVE identifier:** leave on "Request CVE ID later" — GitHub assigns one after the draft is created
+- **Affected products:** one row per currently supported release stream — ask the user which streams are supported if not stated in the report. Each row: ecosystem, package name, affected `< {first fixed release}`, patched `{first fixed release}`
+- **Severity:** CVSS v3.1 vector and score, derived from the rules below, with a one-sentence rationale for each non-obvious metric choice (PR, S, C, I); then the severity the score falls in, named as the form's dropdown names it
 - **CWE:** the most specific id available
 - **Credits:** reporter(s) from the report as *reporter*; whoever authored the fix as *remediation developer*
 
-That is the whole advisory: the body carries no summary, no root-cause walkthrough, and no proof of concept, and the CVE field stays empty — GitHub assigns one after publication. The report's PoC informs the CVSS metrics only.
+That is the whole advisory: no root-cause walkthrough, no payload, no step-by-step reproduction. The report's PoC informs the Proof of concept field's attack shape and the CVSS metrics, nothing more.
 
 ## Derivation rules
 
@@ -79,10 +78,10 @@ That is the whole advisory: the body carries no summary, no root-cause walkthrou
 - SSRF → CWE-918
 - XXE → CWE-611
 
-**Severity bands** from the CVSS base score: 9.0–10.0 Critical · 7.0–8.9 High · 4.0–6.9 Medium · 0.1–3.9 Low.
+**Severity bands** from the CVSS base score: 9.0–10.0 Critical · 7.0–8.9 High · 4.0–6.9 Moderate · 0.1–3.9 Low.
 
 If the report supplies its own CVSS or CWE, validate it; where your analysis disagrees, use your analysis and note the discrepancy in one sentence.
 
 ## Final check
 
-Re-read the title and the Impact section. They must hold zero instance-level identifiers.
+Re-read the title and all four text fields. They must hold zero instance-level identifiers.
