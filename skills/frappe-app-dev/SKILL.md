@@ -44,6 +44,7 @@ Load ONLY the references needed for the current task:
 | ---------------- | -------------------------------------------- | ------------------------------------------------------- |
 | Site management  | Finding/creating/managing sites              | [site-management.md](./references/site-management.md)   |
 | DocTypes         | Creating/modifying DocTypes, fields, naming  | [doctypes.md](./references/doctypes.md)                 |
+| DocType design   | Naming, field properties, layout, list view, permission matrix | [doctype-design.md](./references/doctype-design.md) |
 | Controllers      | Document lifecycle, server logic             | [controllers.md](./references/controllers.md)           |
 | Whitelisted APIs | REST endpoints, `@frappe.whitelist()`        | [api.md](./references/api.md)                           |
 | Database & ORM   | `frappe.db`, queries, raw SQL                | [database.md](./references/database.md)                 |
