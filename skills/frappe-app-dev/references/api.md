@@ -46,7 +46,7 @@ import frappe
 @frappe.whitelist()
 def get_expense_summary(status=None):
     filters = {"status": status} if status else {}
-    return frappe.db.get_all("Expense", filters=filters, fields=["name", "title", "amount"])
+    return frappe.get_list("Expense", filters=filters, fields=["name", "title", "amount"])
 ```
 
 Call from client JS:
@@ -73,7 +73,9 @@ import frappe
 
 @frappe.whitelist()
 def get_dashboard_data():
-    return {"total": frappe.db.count("Expense")}
+    # Counts only the Expenses the caller can read. frappe.db.count ignores permissions
+    result = frappe.get_list("Expense", fields=[{"COUNT": "*", "as": "total"}])
+    return {"total": result[0].total}
 ```
 
 For larger apps, organize by feature:
@@ -148,6 +150,57 @@ Large bulk operations (>20 items by default) are automatically enqueued as backg
 
 Only create custom `@frappe.whitelist()` endpoints for logic that goes beyond CRUD.
 
+## Read records with `get_list`, not `get_all`
+
+A whitelisted method is reachable by any caller who passes its decorator, so its reads must apply the caller's permissions.
+
+| Call | Applies permissions? |
+|---|---|
+| `frappe.get_list` | Yes: role permissions, user permissions, shared documents, "if owner" rules and `permission_query_conditions` |
+| `frappe.get_all` | No. Returns every matching record |
+| `frappe.get_list(..., ignore_permissions=True)` | No. Same as `get_all` |
+| `frappe.db.get_value`, `exists`, `count`, `sql` | No |
+| `frappe.qb.get_query` | No, by default (`ignore_permissions=True`) |
+
+A `get_all` in a whitelisted method lets a caller read records they can't open through `/api/resource/<DocType>` or the list view. When the method also takes `filters` or `fields` from the request, the caller chooses which records and fields come back.
+
+```python
+# Wrong: any logged-in user gets every Expense
+@frappe.whitelist(methods=["GET"])
+def get_expenses(status: str):
+    return frappe.get_all("Expense", filters={"status": status}, fields=["name", "amount"])
+
+# Right: returns only the Expenses the caller can read
+@frappe.whitelist(methods=["GET"])
+def get_expenses(status: str):
+    return frappe.get_list("Expense", filters={"status": status}, fields=["name", "amount"])
+```
+
+Use `get_all` only when the method must read beyond the caller's permissions, for example an aggregate over records the caller can't open. In that case:
+
+- Check first that the caller may see *everything* the query returns. `frappe.has_permission("Expense")` without a document isn't enough: a user who can only read their own Expenses passes it. Gate on a role (`frappe.only_for("Expense Approver")`), or on `doc.check_permission("read")` for each document the query reads.
+- Hardcode `filters` and `fields`. Never pass request values through unchecked.
+- Return only the fields the caller needs.
+
+`get_all` stays the right choice in code no request reaches directly: controller hooks, background jobs, patches and scheduled tasks.
+
+### Child tables
+
+Child tables (`istable: 1`) have no permissions of their own. They take them from the parent. So `frappe.get_list("Expense Item")` raises `PermissionError`, because Frappe doesn't know which parent to check.
+
+Passing `parent_doctype="Expense"` stops the error, but only checks that the caller can read *some* Expense. It still returns rows from Expenses the caller can't open. Instead:
+
+```python
+# Rows from many parents: query the parent and select child fields.
+# Permissions on Expense decide which rows come back
+frappe.get_list("Expense", fields=["name", "items.description", "items.amount"])
+
+# Rows from one parent: check that parent, then read its rows
+expense = frappe.get_doc("Expense", name)
+expense.check_permission("read")
+return expense.items
+```
+
 ## Specify HTTP methods
 
 Always declare allowed HTTP methods explicitly. Frappe auto-commits only for POST/PUT — GET requests do not commit.
@@ -167,4 +220,5 @@ def get_or_create_token(): ...
 
 - **Don't wrap doc methods in standalone APIs.** If the controller has `@frappe.whitelist()` on a method, clients call it directly via `frm.call("approve")` or `POST /api/v2/document/Expense/EXP-001/method/approve`. Don't create a separate `api.py` function that just fetches the doc and calls the same method.
 - **Don't put doc-scoped logic in standalone APIs.** If the function fetches one doc, validates the caller, and acts on that doc — it belongs as a doc-level `@frappe.whitelist()` method, not in `api/`. Reserve standalone APIs for cross-document operations, aggregations, or endpoints with no document context.
+- **Don't use `get_all` to answer a request.** Use `frappe.get_list` so the caller only sees records they can read. See [Read records with `get_list`](#read-records-with-get_list-not-get_all).
 - **Don't leak sensitive fields in guest APIs.** With `allow_guest=True`, only return fields guests need. Never expose `user` (email), internal IDs, or permission-sensitive data.
