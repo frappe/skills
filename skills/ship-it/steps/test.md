@@ -4,7 +4,7 @@ Prove the change works by driving the real product, the way a user would. Unit t
 
 ## Scenarios
 
-Turn the intent into named scenarios: one per `Must` row, plus one per `Must not` row that a user could hit. Name each with its intent row number (`intent #3`). Each scenario has steps and an expected result.
+Turn the intent into named scenarios: one per numbered item, skipping a `Must not` item that a user cannot hit. Name each with its item number (`intent #3`). Each scenario has steps and an expected result.
 
 ## Run them
 

@@ -10,28 +10,27 @@ The intent is the acceptance criteria every later step judges the change against
 
 ## Format
 
-Lay the intent out so the user can check it at a glance:
+A reader should understand the intent in one quick read:
 
 ```markdown
-> **Goal:** <one sentence: the outcome for the user of the product>
+<One short paragraph in plain words: who this is for, what they can do after the change, and why it matters.>
 
-| #   |             | Behavior                                                    |
-| --- | ----------- | ----------------------------------------------------------- |
-| 1   | ✅ Must     | <a behavior the change must have>                           |
-| 2   | ✅ Must     | ...                                                         |
-| 3   | 🚫 Must not | <a behavior the change must leave alone or never introduce> |
-| 4   | ⏭️ Later    | <related work deliberately left out of this change>         |
+1. <a behavior the change must have>
+2. <another one>
+3. Must not: <a behavior the change must leave alone>
 ```
 
-- One behavior per row, short enough to read without wrapping. Keep the row numbers stable: scenarios, findings, and replies refer to them (`intent #3`).
-- The goal is one plain sentence that names who benefits and what they can do, or what behavior becomes reliable. Assume the reader has no context from this conversation. Name the concrete outcome; replace vague goals such as "improve lifecycle handling" with an outcome such as "Operators can delete a site with confirmation and a backup by default." Leave out any row kind with nothing to say.
-- Every row comes from something the user said or decided, or from what the diff plainly does.
+- The paragraph is the goal. Assume the reader has no context from this conversation. Name the concrete outcome: write "Operators can delete a site, with a confirmation and a backup by default", not "Improve site lifecycle handling". Mention related work left out on purpose in one sentence at the end, when there is any.
+- At most 5 numbered items. Each item is one short line. Keep only behaviors a reviewer or tester must check; leave out file lists, README edits, and other details the diff shows.
+- Start an item with "Must not:" for a behavior the change must leave alone or never introduce.
+- Keep the numbers stable: scenarios, findings, and replies refer to them (`intent #3`).
+- Every item comes from something the user said or decided, or from what the diff plainly does.
 
 ## Confirm
 
-Ask in a plain chat message, never with a question tool such as AskUserQuestion: its dialog cuts the table up and hides most of the text.
+Ask in a plain chat message, never with a question tool such as AskUserQuestion: its dialog hides most of the text.
 
-- **prod**: show the intent, then end the turn with one line: `Reply "ok", or edit by row number: "2: <new text>", "drop 4", "add must not: <text>".` Wait for the answer.
+- **prod**: show the intent, then end the turn with one line: `Reply "ok", or edit by item number: "2: <new text>", "drop 3", "add must not: <text>".` Wait for the answer.
 - **wip**: show the intent and continue.
 
 **Done** when the intent is written, and in prod, confirmed.

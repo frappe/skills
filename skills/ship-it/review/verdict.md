@@ -20,7 +20,7 @@ Every reviewer in this skill reports findings in this format. The verdict is com
 
 ### Severity
 
-- **blocker**: must not merge. A likely shipping bug, data loss, a security hole, an unapproved breaking change, or a broken `Must` line of the intent.
+- **blocker**: must not merge. A likely shipping bug, data loss, a security hole, an unapproved breaking change, or a broken intent item.
 - **issue**: worth fixing before merge. A real defect on a rare path, a structural problem the change introduces, a missing test for changed behavior.
 - **nit**: optional. Naming, small readability, a cheap tidy.
 
