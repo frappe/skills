@@ -7,7 +7,7 @@ Every reviewer in this skill reports findings in this format. The verdict is com
 ```json
 {
   "id": "c1",
-  "reviewer": "correctness | taste",
+  "reviewer": "correctness | taste | <bot login>",
   "severity": "blocker | issue | nit",
   "action": "auto-fix | ask-user | no-op",
   "file": "src/tree.ts",
@@ -71,7 +71,7 @@ Write the verdict as one line: `✅ Approve · 0 blockers · 0 issues · 2 nits`
 Every review round, local or bot, ends with one top-level comment on the PR. Post it when the round closes, so every finding has its outcome:
 
 ```markdown
-### Review round <n> · <local | bot name> · <short sha>
+### Review round <n> · <local | bot> · <short sha>
 
 <verdict line>
 
