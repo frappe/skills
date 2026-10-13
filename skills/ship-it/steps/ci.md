@@ -48,17 +48,14 @@ Bots post top-level comments (`issues/<n>/comments`), inline comments (`pulls/<n
 
    After a timeout, read the comments, then watch again with `--since <since>`, where `<since>` is the value the previous run printed. Bots that already posted in this round still count. Do not pass `--trigger` again.
 
-3. Triage every bot finding as **fix**, **decline**, or **ask**:
-   - Grade it with the severities in [review/verdict.md](../review/verdict.md): blocker, issue, or nit.
-   - Fix blockers and issues that hold up. Fix a nit when it is cheap and in a file the PR touches. Otherwise, decline it.
-   - Decline with a one-line reason when the finding contradicts the intent or a recorded decision, is pre-existing code outside the diff, or asks to contort code for the bot.
-   - Ask the user (one batched message) when the finding challenges the intent or product behavior.
-4. Close the round, in this order:
-   - Commit and push the fixes.
+3. Write each bot finding as a finding in the [review/verdict.md](../review/verdict.md) format: id `b<n>`, the bot's login as `reviewer`, and verdict.md's severity and action. Its Rounds rules apply too. Use action `no-op` with the outcome `declined: <reason>` when the finding contradicts a recorded decision or asks to contort the code only to satisfy the bot.
+4. Run steps 1 to 3 of the Fix loop in [steps/review.md](review.md) on these findings: the fixer subagent for `auto-fix`, one batched message for `ask-user`. Tell the fixer to commit defect fixes as `fix:` and the rest as `tidy:`.
+5. Close the round, in this order:
+   - Push the fixes (step 7 of [SKILL.md](../SKILL.md)).
    - Reply on each inline thread: what was fixed, or why it was declined.
-   - Post the round comment ([review/verdict.md](../review/verdict.md)): every bot finding with its outcome. A top-level comment reaches every bot, including those that skip inline threads.
+   - Post the round comment (Fix loop step 4) with every bot finding and its outcome. A top-level comment reaches every bot, including those that skip inline threads.
    - Update the PR body's `## Review` section: decisions and follow-ups.
-   - Watch again, right after the push.
+   - Start the next round. Watching the bots again replaces the Fix loop's re-review with new subagents.
 
 Replies and the round comment carry plain text only, so no bot reads them as a command. Only `--trigger` posts commands, each as its own comment.
 
