@@ -5,7 +5,7 @@ Two reviewers, each a fresh subagent (see "Subagents" in [SKILL.md](../SKILL.md)
 - **Correctness** follows [review/correctness.md](../review/correctness.md). Runs in both tiers. In wip, tell it to report blockers only.
 - **Taste** follows [review/taste.md](../review/taste.md). Runs in prod only.
 
-Run them in parallel. When the repo has `.barista/rules.md` (or `.greptile/rules.md`), tell both reviewers to read it: repo rules win over the reviewer files.
+Run them in parallel. When the repo has rules for its review bots (such as a `rules.md` in a bot's config folder), tell both reviewers to read them: repo rules win over the reviewer files.
 
 ## Reviewer prompt
 

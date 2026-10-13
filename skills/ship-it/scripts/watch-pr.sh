@@ -1,73 +1,59 @@
 #!/bin/bash
-# watch-pr.sh <pr-number> [--repo owner/name] [--sha <head-sha>] [--since <iso8601>]
-#             [--trigger] [--no-barista] [--timeout <seconds>] [--interval <seconds>]
+# watch-pr.sh <pr-number> --bot <login> [--bot <login> ...] [--repo owner/name]
+#             [--since <iso8601>] [--trigger <comment>] [--quiet <seconds>]
+#             [--timeout <seconds>] [--interval <seconds>]
 #
-# Streams bot review activity on a PR: one line per new or edited greptile /
-# barista item. Exits 0 when the round is complete:
-#   - a greptile-apps comment names <sha>, AND
-#   - a barista-for-frappe comment was created after <since>.
+# Streams review bot activity on a PR: one line per new or edited comment or
+# review from a watched bot. Exits 0 when the round is complete:
+#   - every --bot has posted or edited something after <since>, AND
+#   - no watched bot has posted or edited anything for --quiet seconds,
+#     so a bot that edits a "reviewing..." placeholder is not cut off.
 # Exit 2 on timeout, exit 3 if the gh queries fail. Both print what was seen.
 #
-# Barista runs only in repos that install the workflow. The script detects it
-# and, where it is absent, skips the trigger and waits for greptile alone.
-# --no-barista forces that mode.
-#
-# --trigger posts `/barista review` first and takes <since> from the created
-# comment's server timestamp. Use it on every round after the first: barista
-# does NOT re-review on push, and a locally computed cutoff gets the timezone
-# wrong.
+# <since> defaults to the current UTC time: start the watch right after the
+# push. --trigger posts <comment> first (for bots that review only when asked)
+# and takes <since> from the created comment's server timestamp.
 #
 # Claude Code: run through the Monitor tool (persistent: true) so each event
 # re-invokes you. Codex: run in the foreground with a long timeout.
 
 set -u -o pipefail
 
-PR="${1:?usage: watch-pr.sh <pr-number> [--repo o/r] [--sha x] [--since iso] [--trigger] [--no-barista] [--timeout s] [--interval s]}"
+USAGE="usage: watch-pr.sh <pr-number> --bot <login> [--bot <login> ...] [--repo o/r] [--since iso] [--trigger comment] [--quiet s] [--timeout s] [--interval s]"
+PR="${1:?$USAGE}"
 shift
-REPO="" SHA="" SINCE="" TRIGGER=0 BARISTA=auto TIMEOUT=900 INTERVAL=30
+REPO="" SINCE="" TRIGGER="" QUIET=60 TIMEOUT=900 INTERVAL=30
+BOTS=()
 while [ $# -gt 0 ]; do
   case "$1" in
+    --bot) BOTS+=("${2%\[bot\]}"); shift 2 ;;
     --repo) REPO="$2"; shift 2 ;;
-    --sha) SHA="$2"; shift 2 ;;
     --since) SINCE="$2"; shift 2 ;;
-    --trigger) TRIGGER=1; shift ;;
-    --no-barista) BARISTA=no; shift ;;
+    --trigger) TRIGGER="$2"; shift 2 ;;
+    --quiet) QUIET="$2"; shift 2 ;;
     --timeout) TIMEOUT="$2"; shift 2 ;;
     --interval) INTERVAL="$2"; shift 2 ;;
     *) echo "unknown arg: $1" >&2; exit 1 ;;
   esac
 done
+[ "${#BOTS[@]}" -gt 0 ] || { echo "$USAGE" >&2; exit 1; }
 
-# Always resolve REPO, so no command expands an empty array (bash 3.2 + set -u).
 [ -n "$REPO" ] || REPO=$(gh repo view --json nameWithOwner --jq .nameWithOwner)
-# Full 40-char OID. Greptile names the full SHA; a short one never matches.
-[ -n "$SHA" ] || SHA=$(gh pr view "$PR" -R "$REPO" --json headRefOid --jq .headRefOid)
+BOTS_JSON=$(printf '%s\n' "${BOTS[@]}" | jq -R . | jq -sc .)
 
-# Barista is per-repo: only repos with the workflow run it.
-# Posting `/barista review` where nothing listens only adds noise to the PR.
-if [ "$BARISTA" = "auto" ]; then
-  if gh api "repos/$REPO/contents/.github/workflows" --jq '.[].name' 2>/dev/null \
-       | grep -qE '^barista-review\.ya?ml$'; then
-    BARISTA=yes
-  else
-    BARISTA=no
-  fi
+if [ -n "$TRIGGER" ]; then
+  SINCE=$(gh api "repos/$REPO/issues/$PR/comments" -f body="$TRIGGER" --jq .created_at)
+  echo "TRIGGER posted \"$TRIGGER\" at $SINCE"
 fi
-[ "$BARISTA" = "yes" ] || echo "NOTE $REPO has no barista-review workflow: greptile only"
-
-if [ "$TRIGGER" = "1" ] && [ "$BARISTA" = "yes" ]; then
-  SINCE=$(gh api "repos/$REPO/issues/$PR/comments" -f body='/barista review' --jq .created_at)
-  echo "TRIGGER posted /barista review at $SINCE"
-fi
+# GitHub timestamps are UTC with a Z suffix, so plain string comparison works.
+[ -n "$SINCE" ] || SINCE=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 
 SEEN=$(mktemp)
 trap 'rm -f "$SEEN"' EXIT
 
-# REST logins carry a [bot] suffix; GraphQL (gh pr view) does not. Match both.
-BOTS='^(greptile-apps|barista-for-frappe)(\[bot\])?$'
-
-# REST only. `gh pr view --json comments` has no updated_at, which is what broke
-# every --since round. Bots post ISSUE comments, so reviewDecision stays "none".
+# REST logins carry a [bot] suffix; strip it so --bot accepts either form.
+# `edited` is updated_at: a bot that edits one summary comment in place
+# shows up as activity, as does a bot that posts a new comment each round.
 snapshot() {
   {
     gh api "repos/$REPO/issues/$PR/comments" --paginate \
@@ -76,56 +62,43 @@ snapshot() {
       --jq '.[]|{who:.user.login, at:.created_at, edited:.updated_at, url:.html_url, kind:"inline", body:.body}'
     gh api "repos/$REPO/pulls/$PR/reviews" --paginate \
       --jq '.[]|select(.submitted_at != null)|{who:.user.login, at:.submitted_at, edited:.submitted_at, url:.html_url, kind:"review", body:.body}'
-  } 2>/dev/null | jq -c --arg bots "$BOTS" 'select(.who|test($bots))'
+  } 2>/dev/null | jq -c --argjson bots "$BOTS_JSON" \
+    '.who |= sub("\\[bot\\]$"; "") | select(.who as $w | $bots | index($w))'
 }
 
 START=$(date +%s)
+LAST_EVENT=$START
 while true; do
   if ! SNAP=$(snapshot); then
     echo "ERROR gh query failed for $REPO#$PR"
     exit 3
   fi
 
-  # Key on url+edited so an edited greptile summary re-emits as a new event.
+  # Key on url+edited so an edited summary re-emits as a new event.
   while IFS= read -r item; do
     [ -n "$item" ] || continue
     KEY=$(printf '%s' "$item" | jq -r '.url + "@" + .edited')
     grep -qxF "$KEY" "$SEEN" 2>/dev/null && continue
     printf '%s\n' "$KEY" >> "$SEEN"
-    printf '%s' "$item" | jq -r '
-      (if (.who|startswith("greptile")) then "GREPTILE" else "BARISTA" end) as $bot
-      | (.body // "") as $b
-      # Prefer a verdict line (✅/💬/🛑 ...); fall back to an old-style n/5 score.
-      | ([$b|capture("(?<v>(✅|💬|🛑)[^\\n]*)").v][0]
-         // ([$b|capture("(?<s>[0-5])/5").s][0] | if . then . + "/5" else null end)
-         // "-") as $verdict
-      | "\($bot) [\($verdict)] \(.kind) \(.at) \(.url) :: "
-        + ((.body // "")|gsub("\\s+"; " ")|.[0:200])'
+    LAST_EVENT=$(date +%s)
+    printf '%s' "$item" | jq -r \
+      '"\(.who) \(.kind) \(.edited) \(.url) :: " + ((.body // "")|gsub("\\s+"; " ")|.[0:200])'
   done <<< "$SNAP"
 
-  # Greptile edits one summary comment in place, so match on the SHA it names.
-  GREPTILE_OK=$(printf '%s' "$SNAP" | jq -s --arg sha "$SHA" \
-    '[.[]|select(.who|startswith("greptile"))|select(.body|contains($sha))]|length>0')
-  # Barista posts a NEW comment each round: compare created_at, never updated_at.
-  if [ "$BARISTA" = "yes" ]; then
-    BARISTA_OK=$(printf '%s' "$SNAP" | jq -s --arg since "$SINCE" \
-      '[.[]|select(.who|startswith("barista"))|select($since=="" or .at > $since)]|length>0')
-  else
-    BARISTA_OK=true
-  fi
+  WAITING=$(printf '%s' "$SNAP" | jq -sr --argjson bots "$BOTS_JSON" --arg since "$SINCE" \
+    '[.[]|select(.edited > $since)|.who] as $active | $bots - $active | join(" ")')
+  QUIET_FOR=$(( $(date +%s) - LAST_EVENT ))
 
-  if [ "$GREPTILE_OK" = "true" ] && [ "$BARISTA_OK" = "true" ]; then
-    echo "ROUND COMPLETE sha=${SHA:0:8} since=${SINCE:-none}"
+  if [ -z "$WAITING" ] && [ "$QUIET_FOR" -ge "$QUIET" ]; then
+    echo "ROUND COMPLETE since=$SINCE"
     exit 0
   fi
 
   ELAPSED=$(( $(date +%s) - START ))
   if [ "$ELAPSED" -ge "$TIMEOUT" ]; then
-    echo "TIMEOUT ${ELAPSED}s greptile=$GREPTILE_OK barista=$BARISTA_OK sha=${SHA:0:8} since=${SINCE:-none}"
-    printf '%s' "$SNAP" | jq -sr 'sort_by(.at)|reverse|.[0:3][]|"  last: \(.who) \(.at) \(.url)"'
+    echo "TIMEOUT ${ELAPSED}s since=$SINCE waiting for: ${WAITING:-none (still active)}"
+    printf '%s' "$SNAP" | jq -sr 'sort_by(.edited)|reverse|.[0:3][]|"  last: \(.who) \(.edited) \(.url)"'
     echo "  A timeout is not an answer. Read the comments before you conclude anything."
-    [ "$BARISTA" = "yes" ] && \
-      echo "  If barista is missing: gh pr comment $PR -R $REPO --body '/barista review'"
     exit 2
   fi
   sleep "$INTERVAL"

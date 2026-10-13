@@ -23,16 +23,26 @@ When a wait times out or errors, read the PR state directly before you conclude 
 
 ## Bot loop (prod)
 
-The bots are Greptile (every repo that installs it, re-reviews on push) and barista (repos with a `barista-review.yml` workflow, reviews on `/barista review`). Bots post issue comments; read `issues/<n>/comments`, and Greptile's inline findings in `pulls/<n>/comments`. When the repo uses neither bot, skip the bot loop.
+### Find the review bots
+
+A review bot is a GitHub App or bot account that reviews PRs in this repo. Find them before round 1:
+
+- Read the repo's `AGENTS.md`, `CONTRIBUTING.md`, and `.github/workflows/` for review bots and how to start one.
+- Read the comments on the last 5 merged PRs. Note each bot login (the REST API shows `user.type: "Bot"`) that posted findings, not only status or coverage.
+- For each bot, note how it starts a review: on every push, or only when a comment asks for it. Take the exact comment text from the docs or an earlier PR.
+
+No review bots → skip the bot loop.
+
+Bots post top-level comments (`issues/<n>/comments`), inline comments (`pulls/<n>/comments`), and reviews (`pulls/<n>/reviews`). Read all three.
 
 ### Round
 
 1. Read the comments that already exist before waiting.
-2. Watch:
+2. Right after the push, watch, with one `--bot` per review bot:
    ```bash
-   bash <this skill's directory>/scripts/watch-pr.sh <n> --sha <full head sha> [--trigger]
+   bash <this skill's directory>/scripts/watch-pr.sh <n> --bot <login> [--bot <login> ...] [--trigger "<comment>"]
    ```
-   Add `--trigger` from round 2 on: it posts `/barista review` once, in a barista repo only. Exit 0 = round complete, 2 = timeout, 3 = query failed.
+   Pass `--trigger` when a bot reviews only when asked: the script posts that comment once. Exit 0 = every bot posted after the push and then went quiet, 2 = timeout, 3 = query failed.
 3. Triage every bot finding as **fix**, **decline**, or **ask**:
    - Grade it with the severities in [review/verdict.md](../review/verdict.md): blocker, issue, or nit.
    - Fix blockers and issues that hold up. Fix a nit when it is cheap and in a file the PR touches; otherwise decline it.
@@ -41,11 +51,11 @@ The bots are Greptile (every repo that installs it, re-reviews on push) and bari
 4. Close the round, in this order:
    - Commit and push the fixes.
    - Reply on each inline thread: what was fixed, or why it was declined.
-   - Post the round comment ([review/verdict.md](../review/verdict.md)): every bot finding with its outcome. Barista reads only top-level comments.
+   - Post the round comment ([review/verdict.md](../review/verdict.md)): every bot finding with its outcome. A top-level comment reaches every bot, including those that skip inline threads.
    - Update the PR body's `## Review` section: decisions and follow-ups.
-   - Watch again with `--trigger` and the new head sha.
+   - Watch again, right after the push.
 
-Replies and the round comment carry plain text only; the `--trigger` flag alone posts `/barista review`, as its own comment.
+Replies and the round comment carry plain text only, so no bot reads them as a command. Only `--trigger` posts a command, as its own comment.
 
 ### Stop
 
