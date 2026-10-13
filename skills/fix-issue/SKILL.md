@@ -1,6 +1,6 @@
 ---
 name: fix-issue
-description: Fix a bug reported in a GitHub issue or a markdown file, without letting the report's noise and guesses into the main context. Takes an issue number, an issue URL, or a file path as an argument. Use when asked to fix, investigate, or reproduce a reported bug.
+description: Fix a bug or a security vulnerability reported in a GitHub issue or a markdown file, without letting the report's noise and guesses into the main context. Takes an issue number, an issue URL, or a file path as an argument. A security report is fixed on one branch, and a backport is cross-checked against that branch's frappe APIs. Use when asked to fix, investigate, or reproduce a reported bug or vulnerability.
 disable-model-invocation: true
 ---
 
@@ -32,19 +32,39 @@ through unchanged:
 > - **Environment** — version, branch, database, browser, deployment type.
 > - **Scope** — always or intermittent, one user or all, when it started.
 >
+> When the report describes a way to read, change, or run something the actor should not, by any
+> path (an HTTP request, browser steps, an import, an email), also include:
+> - **Effect** — what the attacker got: the data returned, the record changed, the code run.
+> - **Actor** — the account or role the attacker used: Guest, Website User, a desk role.
+> - **Request** — the exact HTTP request (endpoint path, method, payload), or the exact steps in
+>   the browser or other path that the report gives. Verbatim.
+> - **References** — advisory, CVE, or GHSA ids the report states.
+>
+> Put a missing Actor or Request under **Gaps**.
+>
 > Exclude: any proposed fix, patch, or PR link; any guess at the cause or any file,
 > function, or commit the reporter suspects; "I think" / "probably" / "it looks like"
 > clauses; severity, urgency, blame, +1s, greetings, bot comments; repeated restatements
 > of the symptom.
 >
-> A traceback is evidence — keep it, though it names files. A commenter writing "the bug
-> is in x.py" is a guess — drop it.
+> A traceback is evidence — keep it, though it names files. So is the endpoint in a proof of
+> concept request. A commenter writing "the bug is in x.py" or "add a permission check" is a
+> guess — drop it.
 >
 > End with **Gaps**: what a reproduction needs that the report does not give. "none" if
 > complete.
 >
 > Do not read the codebase, verify anything, or offer an opinion. Under 400 words plus
 > verbatim blocks.
+
+## Security reports
+
+When the brief has an **Effect**, the report is a security vulnerability. A stored XSS reported as
+browser steps is one too. A missing Actor or Request is a gap to close, not a reason to take the
+bug path. Run steps 2 and 3 with their **Security** lines, then follow
+[security/workflow.md](security/workflow.md) in place of steps 4 to 6. It fixes the branch of the
+app checkout, cross-checks a backport against that branch's frappe APIs, and keeps the flaw out of
+public text until a release carries the fix.
 
 ## 2. Reproduce before you fix
 
@@ -53,11 +73,23 @@ valid result to report: cannot reproduce and the brief lists gaps; cannot reprod
 the brief is complete (search the log for a commit that already fixed it); or it
 reproduces but the behaviour is correct.
 
+**Security:** reproduce as the brief's Actor. When the brief gives browser steps, follow them and
+note the request they send. When it has no Actor or no Request, `SendMessage` the extractor, then
+ask the human. The payload that works is the **known-positive control**: verification reuses it.
+Before you report "cannot reproduce", check whether this branch already carries a fix: search its
+log, and when another branch has a fix commit, run `security/scripts/fix_differential.py` against
+this branch.
+
 ## 3. Find the cause yourself
 
 Work backwards from the failure through the code. The report told you where the symptom
 surfaced, not where the defect is. Fix the cause; if you can only reach the symptom, say
 so rather than patching it in silence.
+
+**Security:** one report often names several locations: an endpoint, a stored field, a sink. Pin
+each to a file and a function, with the actor and the input that reach it. The endpoint in a proof
+of concept is evidence, not a guess. Trace each from the entry to the sink: the cause is the sink
+and the guard or the encoding it lacks.
 
 ## 4. Fix and verify
 
