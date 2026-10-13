@@ -14,10 +14,11 @@
 # request fails. Both print what was seen. When that time has already passed,
 # it checks once and exits 2, because a round needs 60 quiet seconds.
 #
-# <since> defaults to the current UTC time. Pass the push time, so a bot that
-# answered before the watch started still counts. Each --trigger posts its
-# <comment> first (for bots that review only when asked), and <since> becomes
-# the first posted comment's server timestamp.
+# Pass the push time as <since>, so a bot that answered before the watch
+# started still counts, and the deadline runs from the push. Each --trigger
+# posts its <comment> first (for bots that review only when asked). Without
+# --since, <since> is the first posted comment's server timestamp, or else the
+# current UTC time.
 
 set -u -o pipefail
 
@@ -67,7 +68,6 @@ SNAP=$(snapshot) || { echo "ERROR gh query failed for $REPO#$PR"; exit 3; }
 
 # Comments post in order, so the first one has the earliest timestamp.
 if [ "${#TRIGGERS[@]}" -gt 0 ]; then
-  SINCE=""
   for TRIGGER in "${TRIGGERS[@]}"; do
     AT=$(gh api "repos/$REPO/issues/$PR/comments" -f body="$TRIGGER" --jq .created_at) ||
       { echo "ERROR gh could not post \"$TRIGGER\" on $REPO#$PR"; exit 3; }
