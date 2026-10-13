@@ -1,6 +1,6 @@
 ---
 name: ship-it
-description: Take finished work to a merge-ready PR in one pass - intent, review, live test, docs, lint, PR, and CI. User-invoked only - run /ship-it [wip|prod] ["intent"], or /ship-it on a branch with an open PR to resume or babysit it.
+description: Take finished work to a merge-ready PR in one pass - intent, review, live test, docs, lint, PR, and CI. User-invoked only - run /ship-it [wip] ["intent"], or /ship-it on a branch with an open PR to resume or babysit it.
 disable-model-invocation: true
 ---
 
@@ -10,7 +10,7 @@ You own the work from "code is done" to "PR is ready for the human to merge". Ru
 
 ## Tier
 
-Read the repo's `AGENTS.md` for a line `Ship tier: prod` or `Ship tier: wip`. An argument (`/ship-it wip`) overrides it for this run. When the line is missing, ask the user once which tier applies and offer to add the line.
+Use the prod tier by default. When the user runs `/ship-it wip`, use the wip tier for this run.
 
 - **prod**: a project in production. Every step runs.
 - **wip**: a personal or work-in-progress project. Steps marked – are skipped.
