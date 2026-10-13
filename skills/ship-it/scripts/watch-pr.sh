@@ -10,6 +10,9 @@
 # Exits 0 when the round is complete:
 #   - every --bot has a response, AND
 #   - no watched bot has posted or edited anything for 60 seconds.
+# It then prints the --since and --timeout for a second watch: --since is the
+# current time, so the responses this run counted are not counted again, and
+# --timeout keeps the same deadline.
 # Exit 2 at --timeout seconds (default 1800) after <since>, exit 3 when any gh
 # request fails. Both print what was seen. When that time has already passed,
 # it checks once and exits 2, because a round needs 60 quiet seconds.
@@ -110,6 +113,7 @@ while true; do
 
   if [ -z "$WAITING" ] && [ "$QUIET_FOR" -ge "$QUIET" ]; then
     echo "ROUND COMPLETE since=$SINCE"
+    echo "  To watch again: --since $(date -u +%Y-%m-%dT%H:%M:%SZ) --timeout $(( DEADLINE - $(date +%s) ))"
     exit 0
   fi
 
