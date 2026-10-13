@@ -6,11 +6,10 @@ Write the PR body, then open or update the PR. When the `technical-writing` skil
 
 Apply these rules when creating or updating a PR:
 
-- **Title:** keep the conventional commit prefix and describe the concrete behavior in plain English. Name the affected action or feature. Prefer "Add a site deletion command" to "Improve site lifecycle handling".
-- **Intent paragraph:** follow step 1's concrete-outcome rule. The paragraph must make sense without the conversation or knowledge of internal implementation.
+- **Title:** a conventional commit line for the whole change. Describe the concrete behavior in plain English. Name the affected action or feature. Prefer "Add a site deletion command" to "Improve site lifecycle handling".
 - **Opening paragraph:** put `## Summary` first. Begin with a short paragraph that explains when the problem happens, what goes wrong for the user, and how this change solves it. Introduce any technical term needed to understand the problem. Put the checklist, diagrams, and implementation details after this paragraph.
 
-Before publishing, read the title, Summary paragraph, and Intent paragraph on their own. A reader new to the change must be able to understand the problem and resulting behavior from those three pieces.
+Before publishing, read the title and the Summary paragraph on their own. A reader new to the change must be able to understand the problem and resulting behavior from those two pieces.
 
 ## Body
 
@@ -85,8 +84,6 @@ The evidence itself goes in the body. A reviewer reads the PR, not your logs:
 A **two-way door** is cheap to roll back: revert the commit and nothing is lost. A **one-way door** is not: a data migration, a deleted field, a changed public API, a sent email. The **blast radius** is who or what the change can break: other apps, a layout, existing data, mobile users.
 
 ## Commands
-
-The title is a conventional commit line for the whole change.
 
 - Base branch: the repo's default branch (`gh repo view --json defaultBranchRef`) unless the user named another.
 - New PR, ready for review, not draft (bots skip drafts):
