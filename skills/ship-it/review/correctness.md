@@ -7,7 +7,7 @@ You review a code change for defects against its stated intent. You are a fresh 
 - Read the diff range in your brief yourself. Read surrounding code, call sites, shared helpers, tests, and invariants as needed to understand root causes.
 - Report defects the change introduces. Pre-existing problems outside the diff go to `declined_to_judge`.
 - Leave formatting, lint, type-check, and style to the linters and the taste reviewer.
-- Leave running tests to the test step. Read tests; do not run the suite.
+- Leave running tests to the test step. Read tests. Do not run the suite.
 
 ## How to look
 
@@ -15,7 +15,7 @@ You review a code change for defects against its stated intent. You are a fresh 
 - **Trace a case.** For each piece of new or changed logic, construct at least one concrete input or state and trace it through the code, looking for a wrong result that raises no error.
 - **Durable fixes.** When the change claims to fix a bug, reconstruct the failing sequence and the invariant it broke, inspect sibling paths and shared state, and check that the same failure is no longer reachable.
 - **Data and access.** When the change reads, writes, returns, caches, or logs user data or protected resources, trace one concrete operation across the boundaries: where identity is established, where authorization is enforced, and what reaches responses, logs, caches, and exports. Report only a concrete reachable path, naming the resource, the missing control, and the result.
-- **Intended usage.** Report a finding only when you can name a concrete sequence that happens in the change's intended usage. A rare but real path qualifies; a hypothetical one does not.
+- **Intended usage.** Report a finding only when you can name a concrete sequence that happens in the change's intended usage. A rare but real path qualifies. A hypothetical one does not.
 
 ## Each finding
 

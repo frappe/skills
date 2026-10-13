@@ -19,7 +19,7 @@ When a wait times out or errors, read the PR state directly before you conclude 
 3. A repo with no checks at all → note "no CI" in the report and continue. A PR whose checks never start → ask the user.
 4. Failures: read the logs with `gh run view <run-id> --log-failed`.
    - A transient failure (network, runner, rate limit) → `gh run rerun <run-id> --failed`, once.
-   - A real failure → a fixer subagent, then commit and push (step 7 of [SKILL.md](../SKILL.md)). Up to 3 attempts; then ask the user.
+   - A real failure → a fixer subagent, then commit and push (step 7 of [SKILL.md](../SKILL.md)). Up to 3 attempts, then ask the user.
 
 ## Bot loop (prod)
 
@@ -45,7 +45,7 @@ Bots post top-level comments (`issues/<n>/comments`), inline comments (`pulls/<n
    Pass one `--trigger` for each bot that reviews only when asked. The script posts each comment once, before it watches. Exit 0 = every bot posted after the push and then went quiet, 2 = timeout, 3 = query failed.
 3. Triage every bot finding as **fix**, **decline**, or **ask**:
    - Grade it with the severities in [review/verdict.md](../review/verdict.md): blocker, issue, or nit.
-   - Fix blockers and issues that hold up. Fix a nit when it is cheap and in a file the PR touches; otherwise decline it.
+   - Fix blockers and issues that hold up. Fix a nit when it is cheap and in a file the PR touches. Otherwise, decline it.
    - Decline with a one-line reason when the finding contradicts the intent or a recorded decision, is pre-existing code outside the diff, or asks to contort code for the bot.
    - Ask the user (one batched message) when the finding challenges the intent or product behavior.
 4. Close the round, in this order:

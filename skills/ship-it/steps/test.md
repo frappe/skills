@@ -1,6 +1,6 @@
 # 4. Test (prod)
 
-Prove the change works by driving the real product, the way a user would. Unit tests are CI's job; run only the tests near the change, if any.
+Prove the change works by driving the real product, the way a user would. Unit tests are CI's job. Run only the tests near the change, if any.
 
 ## Scenarios
 

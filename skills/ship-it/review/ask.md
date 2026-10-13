@@ -13,7 +13,7 @@ Every `ask-user` finding from a step goes to the user in one plain chat message,
 4. **The options** as a table: letter, option, and what it changes. Put a related finding that one option fixes and another does not in its own column. Mark the one you recommend.
 5. **Your note**, when you have one, in one line.
 
-No paragraph longer than two lines. Write each finding fresh; do not paste the reviewer's description. The full description stays in the round comment ([verdict.md](verdict.md)).
+No paragraph longer than two lines. Write each finding fresh. Do not paste the reviewer's description. The full description stays in the round comment ([verdict.md](verdict.md)).
 
 End the message with one reply line: `Reply like: "1a, 2b", or "2 skip: <reason>".`
 
@@ -36,7 +36,7 @@ Any logged-in user can list every open Sales Order, including other customers' o
 | **a** ✓ | `get_list` | Applies read permissions. Portal users see only their own orders. |
 | **b**   | Leave it   | Every caller sees every open order.                               |
 
-The reviewer marked this auto-fix; I am asking because **a** changes what the Orders page shows today.
+The reviewer marked this auto-fix. I am asking because **a** changes what the Orders page shows today.
 
 ---
 

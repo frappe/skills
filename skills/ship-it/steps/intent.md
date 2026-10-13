@@ -21,7 +21,7 @@ A reader should understand the intent in one quick read:
 ```
 
 - The paragraph is the goal. Assume the reader has no context from this conversation. Name the concrete outcome: write "Operators can delete a site, with a confirmation and a backup by default", not "Improve site lifecycle handling". Mention related work left out on purpose in one sentence at the end, when there is any.
-- At most 5 numbered items. Each item is one short line. Keep only behaviors a reviewer or tester must check; leave out file lists, README edits, and other details the diff shows.
+- At most 5 numbered items. Each item is one short line. Keep only behaviors a reviewer or tester must check. Leave out file lists, README edits, and other details the diff shows.
 - Start an item with "Must not:" for a behavior the change must leave alone or never introduce.
 - Keep the numbers stable: scenarios, findings, and replies refer to them (`intent #3`).
 - Every item comes from something the user said or decided, or from what the diff plainly does.

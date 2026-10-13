@@ -7,7 +7,7 @@ Write the PR body, then open or update the PR. When the `technical-writing` skil
 Apply these rules when creating or updating a PR:
 
 - **Title:** a conventional commit line for the whole change. Describe the concrete behavior in plain English. Name the affected action or feature. Prefer "Add a site deletion command" to "Improve site lifecycle handling".
-- **Opening paragraph:** put `## Summary` first. Begin with a short paragraph that explains when the problem happens, what goes wrong for the user, and how this change solves it. Introduce any technical term needed to understand the problem. Put the checklist, diagrams, and implementation details after this paragraph.
+- **Opening paragraph:** put `## Summary` first. Start with a short paragraph that explains when the problem happens, what goes wrong for the user, and how this change solves it. Introduce any technical term needed to understand the problem. Put the checklist, diagrams, and implementation details after this paragraph.
 
 Before publishing, read the title and the Summary paragraph on their own. A reader new to the change must be able to understand the problem and resulting behavior from those two pieces.
 

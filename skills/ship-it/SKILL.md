@@ -39,10 +39,10 @@ Steps 4 to 9 can add commits after the review: test fixes, docs, lint, CI fixes,
 
 There is no state file. The branch, the commits, and the PR are the record. On every run, find the first unfinished step:
 
-1. No commits ahead of the base branch and no uncommitted changes → nothing to ship; say so.
+1. No commits ahead of the base branch and no uncommitted changes → nothing to ship. Say so.
 2. Read the PR for this branch (`gh pr view --json number,body,headRefOid,isDraft`).
    - No PR → start at step 1.
-   - The PR body has `## Intent` → that is the intent; skip step 1 unless the user gave a new one.
+   - The PR body has `## Intent` → that is the intent. Skip step 1 unless the user gave a new one.
    - The `<!-- ship-it: reviewed=<sha> tier=<tier> -->` marker in `## Review` names the last reviewed commit. Commits after it (local or pushed) → re-run review on `<sha>..HEAD` only, then continue forward.
 3. Unpushed commits → step 7. CI failing or running → step 9. CI green → step 9's bot loop (prod) or done (wip).
 
@@ -51,7 +51,7 @@ Tell the user which step you are resuming from and why, in one line.
 ## Where it runs
 
 - **In place** when the checkout is a feature branch or worktree and every uncommitted change belongs to this intent.
-- **Ask first** when on the default branch, or when uncommitted changes mix this work with other work. Offer to move this work to a new worktree; create one only on a yes.
+- **Ask first** when on the default branch, or when uncommitted changes mix this work with other work. Offer to move this work to a new worktree. Create one only on a yes.
 - **Frappe app inside a bench**: a plain `git worktree` is invisible to the bench. Run in place.
 
 ## Subagents
@@ -74,7 +74,7 @@ Reviewers return findings in the format in [review/verdict.md](review/verdict.md
 
 ### 2. Rebase
 
-`git fetch origin`, then rebase onto `origin/<base>`. Also take in commits already on `origin/<branch>` that are missing locally. Resolve conflicts in the spirit of both sides and the intent; when a conflict needs a product decision, ask. When the diff against the base is empty after rebase, stop: there is nothing to ship.
+`git fetch origin`, then rebase onto `origin/<base>`. Also take in commits already on `origin/<branch>` that are missing locally. Resolve conflicts in the spirit of both sides and the intent. When a conflict needs a product decision, ask. When the diff against the base is empty after rebase, stop: there is nothing to ship.
 
 ### 5. Docs (prod)
 

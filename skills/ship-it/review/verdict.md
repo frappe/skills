@@ -1,6 +1,6 @@
 # Findings and verdict
 
-Every reviewer in this skill reports findings in this format. The verdict is computed from the findings by the table below. A reviewer reports findings; it never picks the verdict or a score.
+Every reviewer in this skill reports findings in this format. The verdict is computed from the findings by the table below. A reviewer reports findings. It never picks the verdict or a score.
 
 ## Finding
 
