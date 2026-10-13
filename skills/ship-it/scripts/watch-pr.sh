@@ -6,7 +6,7 @@
 # review from a watched bot, polled every 30 seconds in the current repo.
 # Before it posts any --trigger, it records every watched bot item it can see.
 # An item is a response when it is not in that starting set, or when it was
-# edited after <since>. A starting item edited exactly at <since> does not count.
+# edited after <since>.
 # Exits 0 when the round is complete:
 #   - every --bot has a response, AND
 #   - no watched bot has posted or edited anything for 60 seconds.
@@ -42,8 +42,8 @@ REPO=$(gh repo view --json nameWithOwner --jq .nameWithOwner) ||
   { echo "ERROR gh could not find the repo. Run from inside the checkout."; exit 3; }
 BOTS_JSON=$(printf '%s\n' "${BOTS[@]}" | jq -R . | jq -sc .)
 
-STARTING=$(mktemp) SEEN=$(mktemp)
-trap 'rm -f "$STARTING" "$SEEN"' EXIT
+SEEN=$(mktemp)
+trap 'rm -f "$SEEN"' EXIT
 
 # REST logins carry a [bot] suffix; strip it so --bot accepts either form.
 # `edited` is updated_at: a bot that edits one summary comment in place
@@ -64,7 +64,6 @@ snapshot() {
 }
 
 SNAP=$(snapshot) || { echo "ERROR gh query failed for $REPO#$PR"; exit 3; }
-printf '%s' "$SNAP" | jq -r .key > "$STARTING"
 
 # Comments post in order, so the first one has the earliest timestamp.
 if [ "${#TRIGGERS[@]}" -gt 0 ]; then
@@ -76,10 +75,13 @@ if [ "${#TRIGGERS[@]}" -gt 0 ]; then
     [ -n "$SINCE" ] || SINCE=$AT
   done
 fi
-# GitHub timestamps are UTC with a Z suffix, so plain string comparison works.
 [ -n "$SINCE" ] || SINCE=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 DEADLINE=$(jq -n --arg s "$SINCE" --argjson t "$TIMEOUT" '($s|fromdateiso8601) + $t') ||
   { echo "$USAGE (iso is UTC, like 2026-01-31T12:00:00Z)" >&2; exit 1; }
+
+# Starting items not edited after <since> are not responses: mark them seen.
+# GitHub timestamps are UTC with a Z suffix, so plain string comparison works.
+printf '%s' "$SNAP" | jq -r --arg since "$SINCE" 'select(.edited <= $since) | .key' > "$SEEN"
 
 LAST_EVENT=$(date +%s)
 RESPONDED=" "
@@ -91,9 +93,8 @@ while true; do
 
   while IFS= read -r item; do
     [ -n "$item" ] || continue
-    IFS=$'\t' read -r KEY EDITED WHO <<< "$(printf '%s' "$item" | jq -r '[.key, .edited, .who] | @tsv')"
+    IFS=$'\t' read -r KEY WHO <<< "$(printf '%s' "$item" | jq -r '[.key, .who] | @tsv')"
     grep -qxF "$KEY" "$SEEN" && continue
-    if grep -qxF "$KEY" "$STARTING" && [[ ! "$EDITED" > "$SINCE" ]]; then continue; fi
     printf '%s\n' "$KEY" >> "$SEEN"
     LAST_EVENT=$(date +%s)
     RESPONDED="$RESPONDED$WHO "
