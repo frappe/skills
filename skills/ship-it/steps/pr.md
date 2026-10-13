@@ -51,11 +51,11 @@ Before publishing, read the title and the Summary paragraph on their own. A read
 
 After the opening paragraph, add the smallest visual that makes the change clear. Usually one is enough:
 
-- a call tree for a change in control flow;
-- a component tree for a UI change;
-- a shallow file tree for a refactor across files;
-- a Mermaid diagram for interaction between parts;
-- a `diff` of one of the above when the point is what changed in a shape that already exists.
+- a call tree for a change in control flow
+- a component tree for a UI change
+- a shallow file tree for a refactor across files
+- a Mermaid diagram for interaction between parts
+- a `diff` of one of the above when the point is what changed in a shape that already exists
 
 Keep only the calls, files, and states a reviewer needs.
 
