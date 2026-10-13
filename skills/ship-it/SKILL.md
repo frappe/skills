@@ -44,7 +44,8 @@ There is no state file. The branch, the commits, and the PR are the record. On e
    - No PR → start at step 1.
    - The PR body has `## Intent` → that is the intent. Skip step 1 unless the user gave a new one.
    - The `<!-- ship-it: reviewed=<sha> tier=<tier> -->` marker in `## Review` names the last reviewed commit. Commits after it (local or pushed) → re-run review on `<sha>..HEAD` only, then continue forward.
-3. Unpushed commits → step 7. CI failing or running → step 9. CI green → step 9's bot loop (prod) or done (wip).
+3. The tier for this run is prod and the marker says `tier=wip` → step 4 (Test), the first step wip skipped. Step 8 then writes the full prod body and sets the marker to `tier=prod`.
+4. Otherwise: unpushed commits → step 7. CI failing or running → step 9. CI green → step 9's bot loop (prod) or done (wip).
 
 Tell the user which step you are resuming from and why, in one line.
 
