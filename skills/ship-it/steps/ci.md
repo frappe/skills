@@ -38,19 +38,19 @@ Bots post top-level comments (`issues/<n>/comments`), inline comments (`pulls/<n
 ### Round
 
 1. Read the comments that already exist before waiting.
-2. Right after the push, watch, with one `--bot` per review bot:
+2. Watch, with one `--bot` per review bot. Pass the time of the last push as `--since`:
 
    ```bash
-   bash <this skill's directory>/scripts/watch-pr.sh <n> --bot <login> [--bot <login> ...] [--trigger "<comment>" ...] --timeout 1800
+   bash <this skill's directory>/scripts/watch-pr.sh <n> --bot <login> [--bot <login> ...] [--trigger "<comment>" ...] --since <push time>
    ```
 
-   Pass one `--trigger` for each bot that reviews only when asked. The script posts each comment once, before it watches. Exit 0 = every bot posted after the push and then went quiet, 2 = timeout, 3 = query failed.
+   Note the push time with `date -u +%Y-%m-%dT%H:%M:%SZ` right after each push. When this run did not push, use the head commit's time: `TZ=UTC git log -1 --date=format-local:%Y-%m-%dT%H:%M:%SZ --format=%cd`.
 
-   A bot can post a placeholder first and edit its findings in later. After exit 0, read each bot's latest comment. When one says its review is still running, watch again.
+   Pass one `--trigger` for each bot that reviews only when asked. The script posts each comment once, before it watches, and the first comment's time becomes `since`. Exit 0 = every bot posted after `since` and then went quiet, 2 = timeout, 3 = query failed. The watcher exits 2 at 30 minutes after `since`.
 
-   Each time you watch again in the same round, pass `--since <since>` with the value the previous run printed, so bots that already posted still count. Pass `--timeout` with the seconds left until 30 minutes after the push. Do not pass `--trigger` again.
+   A bot can post a placeholder first and edit its findings in later. After exit 0, read each bot's latest comment. When one says its review is still running, watch again. Pass `--since` with the value the previous run printed, and do not pass `--trigger` again.
 
-   Stop waiting 30 minutes after the push. At that point, or after a timeout, read the comments. A bot that still says its review is running, or has not posted, did not finish. Stop waiting for that bot, and note in the PR body's `## Review` section that its review did not finish. Continue with the findings you have.
+   After exit 2, read the comments. A bot that still says its review is running, or has not posted, did not finish. Note in the PR body's `## Review` section that its review did not finish. Continue with the findings you have.
 
 3. Write each bot finding as a finding in the [review/verdict.md](../review/verdict.md) format: id `b<n>`, the bot's login as `reviewer`, and verdict.md's severity and action. Its Rounds rules apply too. Use action `no-op` with the outcome `declined: <reason>` when the finding contradicts a recorded decision or asks to contort the code only to satisfy the bot.
 4. Run steps 1 to 3 of the Fix loop in [steps/review.md](review.md) on these findings: the fixer subagent for `auto-fix`, one batched message for `ask-user`.

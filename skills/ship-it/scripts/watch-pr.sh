@@ -10,19 +10,21 @@
 # Exits 0 when the round is complete:
 #   - every --bot has a response, AND
 #   - no watched bot has posted or edited anything for 60 seconds.
-# Exit 2 after --timeout seconds (default 900), exit 3 when any gh request
-# fails. Both print what was seen.
+# Exit 2 at --timeout seconds (default 1800) after <since>, exit 3 when any gh
+# request fails. Both print what was seen. When that time has already passed,
+# it checks once and exits 2, because a round needs 60 quiet seconds.
 #
-# <since> defaults to the current UTC time: start the watch right after the
-# push. Each --trigger posts its <comment> first (for bots that review only
-# when asked), and <since> becomes the first posted comment's server timestamp.
+# <since> defaults to the current UTC time. Pass the push time, so a bot that
+# answered before the watch started still counts. Each --trigger posts its
+# <comment> first (for bots that review only when asked), and <since> becomes
+# the first posted comment's server timestamp.
 
 set -u -o pipefail
 
 USAGE="usage: watch-pr.sh <pr-number> --bot <login> [--bot <login> ...] [--trigger comment ...] [--since iso] [--timeout s]"
 PR="${1:?$USAGE}"
 shift
-SINCE="" TIMEOUT=900
+SINCE="" TIMEOUT=1800
 QUIET=60 INTERVAL=30
 BOTS=() TRIGGERS=()
 while [ $# -gt 0 ]; do
@@ -76,9 +78,10 @@ if [ "${#TRIGGERS[@]}" -gt 0 ]; then
 fi
 # GitHub timestamps are UTC with a Z suffix, so plain string comparison works.
 [ -n "$SINCE" ] || SINCE=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+DEADLINE=$(jq -n --arg s "$SINCE" --argjson t "$TIMEOUT" '($s|fromdateiso8601) + $t') ||
+  { echo "$USAGE (iso is UTC, like 2026-01-31T12:00:00Z)" >&2; exit 1; }
 
-START=$(date +%s)
-LAST_EVENT=$START
+LAST_EVENT=$(date +%s)
 RESPONDED=" "
 while true; do
   if ! SNAP=$(snapshot); then
@@ -109,12 +112,12 @@ while true; do
     exit 0
   fi
 
-  ELAPSED=$(( $(date +%s) - START ))
-  if [ "$ELAPSED" -ge "$TIMEOUT" ]; then
-    echo "TIMEOUT ${ELAPSED}s since=$SINCE waiting for: ${WAITING:-none (still active)}"
+  LEFT=$(( DEADLINE - $(date +%s) ))
+  if [ "$LEFT" -le 0 ]; then
+    echo "TIMEOUT ${TIMEOUT}s after since=$SINCE waiting for: ${WAITING:-none (still active)}"
     printf '%s' "$SNAP" | jq -sr 'sort_by(.edited)|reverse|.[0:3][]|"  last: \(.who) \(.edited) \(.url)"'
     echo "  A timeout is not an answer. Read the comments before you conclude anything."
     exit 2
   fi
-  sleep "$INTERVAL"
+  sleep $(( LEFT < INTERVAL ? LEFT : INTERVAL ))
 done

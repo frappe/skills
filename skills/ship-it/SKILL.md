@@ -93,3 +93,4 @@ Push safely:
 
 - `git fetch origin`, then confirm `origin/<branch>` (when it exists) is an ancestor of `HEAD`. When it is not, the remote has work you have not taken in: go back to step 2.
 - After a rebase that rewrote pushed commits, push with `--force-with-lease=<branch>:<sha you fetched>`. Otherwise a plain push.
+- Note the push time. The bot loop in [steps/ci.md](steps/ci.md) uses it.
