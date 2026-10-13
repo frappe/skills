@@ -76,7 +76,7 @@ Reviewers return findings in the format in [review/verdict.md](review/verdict.md
 
 ### 2. Rebase
 
-`git fetch origin`. When `origin/<branch>` exists, record its sha for step 7 and take in the remote commits whose changes are not in `HEAD`: `git cherry HEAD origin/<branch>` marks them with `+`. A commit that an earlier rebase rewrote has the same change in `HEAD`, so it shows `-` and is not taken in again. When a rebase conflict changed a commit, it can show `+` though its change is already in `HEAD`; skip it. `git cherry` does not list merge commits: for each one in `git log --merges HEAD..origin/<branch>`, compare its changes with `HEAD` and take in what `HEAD` lacks, such as a hand-resolved conflict. `git cherry` compares single patches, not final files: a remote commit that restores a change an earlier commit reverted matches the earlier patch and shows `-`. So check the final files too. For each file in `git diff --name-only --no-renames $(git merge-base HEAD origin/<branch>) origin/<branch>`, `git diff HEAD origin/<branch> -- <file>` must show only base changes and local work. Take in any remote change it shows that `HEAD` lacks. Then rebase onto `origin/<base>`. Resolve conflicts in the spirit of both sides and the intent. When a conflict needs a product decision, ask. When the diff against the base is empty after rebase, stop: there is nothing to ship.
+`git fetch origin`. When `origin/<branch>` exists, record its sha for step 7 and take in the remote work that local history lacks. Find the last commit this clone pushed: `git reflog show --format='%H %gs' origin/<branch> | grep -m1 'update by push'`. Every commit up to it is already in local history, possibly rewritten by an earlier rebase. The commits after it, `<pushed sha>..origin/<branch>`, were pushed by someone else: take each one in, for example with `git cherry-pick`. When this clone never pushed the branch, take in `HEAD..origin/<branch>`. Skip a commit whose change `HEAD` already has. Then rebase onto `origin/<base>`. Resolve conflicts in the spirit of both sides and the intent. When a conflict needs a product decision, ask. When the diff against the base is empty after rebase, stop: there is nothing to ship.
 
 ### 5. Docs (prod)
 
@@ -92,7 +92,7 @@ Commit in logical groups with conventional messages (`feat:`, `fix:`, `refactor:
 
 Push safely:
 
-- `git fetch origin`. When this run has not recorded the sha of `origin/<branch>` (a resume at step 7), record it now and take in new remote commits as in step 2.
+- When this run has not recorded the sha of `origin/<branch>` (a resume at step 7), fetch, record it, and take in remote work as in step 2. Otherwise `git fetch origin`.
 - Compare `origin/<branch>` with the recorded sha. When it moved, the remote has work you have not taken in: go back to step 2.
 - When `origin/<branch>` does not exist or is an ancestor of `HEAD`, use a plain push. Otherwise `HEAD` rewrote pushed commits, in this run or an earlier one: push with `--force-with-lease=<branch>:<recorded sha>`.
 - When the push is rejected because the remote changed after the fetch (`non-fast-forward`, `fetch first`, or `stale info`), go back to step 2. Any other rejection (permissions, branch protection, a server-side hook) does not change after a rebase. Stop and show the error to the user.
