@@ -63,7 +63,7 @@ Write the verdict as one line: `✅ Approve · 0 blockers · 0 issues · 2 nits`
 
 - **Round 1** reviews the whole change.
 - **Round 2 and later** review only the commits since the last review, and verify the findings still open. A new finding in code an earlier round already reviewed counts only when it is a blocker.
-- **After round 3**, only blockers change the verdict.
+- **Limit:** the local review loop and the bot loop each get 3 rounds. After a loop's third round, only blockers change the verdict and keep that loop going. The other open findings go to the PR's `## Review` section as follow-ups.
 - Code that was already there before this change goes to `declined_to_judge` or a follow-up, never into the count.
 
 ## Round comment
@@ -86,4 +86,4 @@ Every review round, local or bot, ends with one top-level comment on the PR. Pos
 
 Outcomes: `fixed in <sha>`, `declined: <reason>`, `skipped by the user: <reason>`, `follow-up`, or `open`. A round with no findings still gets a comment with its verdict line.
 
-Number rounds in one sequence per PR, local and bot together. Before the PR exists, save each local round's comment to `$TMPDIR/ship-it/<repo>-<branch>/round-<n>.md`; step 8 posts them in order once the PR is created.
+Number round comments in one sequence per PR, local and bot together. This numbering does not count toward the limit above. Before the PR exists, save each local round's comment to `$TMPDIR/ship-it/<repo>-<branch>/round-<n>.md`. Step 8 posts them in order once the PR is created.

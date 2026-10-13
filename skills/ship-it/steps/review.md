@@ -28,6 +28,6 @@ Give each reviewer:
 3. Present the `ask-user` findings to the user in one message (format in [review/ask.md](../review/ask.md)). Apply their answers: fixes go to a fixer subagent, skips become decisions.
 4. Close the round with its round comment ([review/verdict.md](../review/verdict.md)): post it on the PR when one exists, otherwise save it for step 8.
 5. Re-review with new subagents, scoped to the commits the fixes added plus the findings still open.
-6. Repeat up to 3 rounds. After round 3, only blockers keep the loop going; remaining issues and nits go to the PR's `## Review` section as follow-ups.
+6. Repeat until the round limit in [review/verdict.md](../review/verdict.md#rounds) stops the loop.
 
-**Done** when the verdict is Approve or Approve with comments, or round 3 left only non-blockers, or the user approved past the remaining findings. Note the reviewed `HEAD` sha for the PR's `## Review` marker.
+**Done** when the verdict is Approve or Approve with comments, or the round limit left only non-blockers, or the user approved past the remaining findings. Note the reviewed `HEAD` sha for the PR's `## Review` marker.
