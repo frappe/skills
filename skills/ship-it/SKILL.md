@@ -31,7 +31,7 @@ Use the prod tier by default. A tier argument (`/ship-it wip` or `/ship-it prod`
 
 Read a step's detail file when you reach that step, not before.
 
-Steps 4 to 9 can add commits after the review: test fixes, docs, lint, CI fixes, and bot fixes. Before step 8 opens or updates the PR, and before you report done, compare `HEAD` with the last reviewed sha. When commits follow it, re-review `<sha>..HEAD` as in [steps/review.md](steps/review.md). Then put the new reviewed sha in the `## Review` marker.
+Steps 4 to 9 can add commits after the review: test fixes, docs, lint, CI fixes, and bot fixes. Before step 8 opens or updates the PR, and before you report done, compare `HEAD` with the last reviewed sha. When commits follow it, re-review `<sha>..HEAD` as in [steps/review.md](steps/review.md). Then put the new reviewed sha in the `## Review` marker. In prod, when those commits change behavior that a live scenario covers, re-run that scenario as in [steps/test.md](steps/test.md) and replace its evidence in the PR body before you report done.
 
 **Done** means: the PR is open and ready (not draft), the `## Review` marker names `HEAD`, CI is green, and in prod the bot loop has stopped by its rule. Report to the user and ask them to review and merge. Stop there.
 
