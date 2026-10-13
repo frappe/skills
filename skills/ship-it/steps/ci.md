@@ -46,7 +46,7 @@ Bots post top-level comments (`issues/<n>/comments`), inline comments (`pulls/<n
 
    Note the push time with `date -u +%Y-%m-%dT%H:%M:%SZ` right after each push. When this run did not push, use the time GitHub first saw the head commit: `gh api repos/{owner}/{repo}/commits/<head sha>/check-suites --jq '[.check_suites[].created_at] | min'`. When that prints `null`, use the head commit's time: `TZ=UTC git log -1 --date=format-local:%Y-%m-%dT%H:%M:%SZ --format=%cd`.
 
-   Pass one `--trigger` for each bot that reviews only when asked. The script posts each comment once, before it watches. `since` stays the push time. Exit 0 = every bot posted at or after `since` and then went quiet, 2 = timeout, 3 = query failed. The watcher exits 2 at 30 minutes after `since`.
+   Pass one `--trigger` for each bot that reviews only when asked. The script posts each comment once, before it watches. `since` stays the push time. Exit 0 = every bot posted after `since` and then went quiet, 2 = timeout, 3 = query failed. The watcher exits 2 at 30 minutes after `since`.
 
    A bot can post a placeholder first and edit its findings in later. After exit 0, read each bot's latest comment. When one says its review is still running, watch again. Pass `--since` with the value the previous run printed, and do not pass `--trigger` again.
 

@@ -6,7 +6,7 @@
 # review from a watched bot, polled every 30 seconds in the current repo.
 # Before it posts any --trigger, it records every watched bot item it can see.
 # An item is a response when it is not in that starting set, or when it was
-# edited at or after <since>.
+# edited after <since>.
 # Exits 0 when the round is complete:
 #   - every --bot has a response, AND
 #   - no watched bot has posted or edited anything for 60 seconds.
@@ -79,10 +79,9 @@ fi
 DEADLINE=$(jq -n --arg s "$SINCE" --argjson t "$TIMEOUT" '($s|fromdateiso8601) + $t') ||
   { echo "$USAGE (iso is UTC, like 2026-01-31T12:00:00Z)" >&2; exit 1; }
 
-# Starting items edited before <since> are not responses: mark them seen.
-# An item edited at or after <since> counts, since a bot can answer in the same second.
+# Starting items not edited after <since> are not responses: mark them seen.
 # GitHub timestamps are UTC with a Z suffix, so plain string comparison works.
-printf '%s' "$SNAP" | jq -r --arg since "$SINCE" 'select(.edited < $since) | .key' > "$SEEN"
+printf '%s' "$SNAP" | jq -r --arg since "$SINCE" 'select(.edited <= $since) | .key' > "$SEEN"
 
 LAST_EVENT=$(date +%s)
 RESPONDED=" "
