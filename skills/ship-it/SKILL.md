@@ -40,12 +40,12 @@ Steps 4 to 9 can add commits after the review: test fixes, docs, lint, CI fixes,
 There is no state file. The branch, the commits, and the PR are the record. On every run, find the first unfinished step:
 
 1. No commits ahead of the base branch and no uncommitted changes → nothing to ship. Say so.
-2. Read the PR for this branch (`gh pr view --json number,body,headRefOid,isDraft`).
+2. Uncommitted changes that belong to this intent → commit them first, in logical groups with messages as in step 7. Do not push. Changes that mix in other work → ask first, as in "Where it runs".
+3. Read the PR for this branch (`gh pr view --json number,body,headRefOid,isDraft`).
    - No PR → start at step 1.
    - The PR body has `## Intent` → that is the intent. Skip step 1 unless the user gave a new one.
    - The `<!-- ship-it: reviewed=<sha> tier=<tier> -->` marker in `## Review` names the last reviewed commit. Commits after it (local or pushed) → re-run review on `<sha>..HEAD` only, then continue forward.
-3. The tier for this run is prod and the marker says `tier=wip` → step 1. Wip did not confirm the intent, ran only part of the review, and skipped the test and docs steps. Step 3 reviews the whole change again, and step 8 writes the full prod body and sets the marker to `tier=prod`.
-4. Uncommitted changes that belong to this intent → commit them first, in logical groups with messages as in step 7. Do not push. Then go to step 3, which reviews `<marker sha>..HEAD`, and continue forward through the steps. Changes that mix in other work → ask first, as in "Where it runs".
+4. The tier for this run is prod and the marker says `tier=wip` → step 1. Wip did not confirm the intent, ran only part of the review, and skipped the test and docs steps. Step 3 reviews the whole change again, and step 8 writes the full prod body and sets the marker to `tier=prod`.
 5. Otherwise: unpushed commits → step 7. PR is a draft → step 8. CI failing or running → step 9. CI green → step 9's bot loop (prod) or done (wip).
 
 Tell the user which step you are resuming from and why, in one line.
