@@ -1,14 +1,14 @@
 #!/bin/bash
-# watch-pr.sh <pr-number> --bot <login> [--bot <login> ...] [--repo owner/name]
-#             [--since <iso8601>] [--trigger <comment> ...] [--quiet <seconds>]
-#             [--timeout <seconds>] [--interval <seconds>]
+# watch-pr.sh <pr-number> --bot <login> [--bot <login> ...]
+#             [--trigger <comment> ...] [--since <iso8601>] [--timeout <seconds>]
 #
 # Streams review bot activity on a PR: one line per new or edited comment or
-# review from a watched bot. Exits 0 when the round is complete:
+# review from a watched bot, polled every 30 seconds in the current repo.
+# Exits 0 when the round is complete:
 #   - every --bot has posted or edited something at or after <since>, AND
-#   - no watched bot has posted or edited anything for --quiet seconds,
-#     so a bot that edits a "reviewing..." placeholder is not cut off.
-# Exit 2 on timeout, exit 3 when any gh request fails. Both print what was seen.
+#   - no watched bot has posted or edited anything for 60 seconds.
+# Exit 2 after --timeout seconds (default 900), exit 3 when any gh request
+# fails. Both print what was seen.
 #
 # <since> defaults to the current UTC time: start the watch right after the
 # push. Each --trigger posts its <comment> first (for bots that review only
@@ -16,27 +16,25 @@
 
 set -u -o pipefail
 
-USAGE="usage: watch-pr.sh <pr-number> --bot <login> [--bot <login> ...] [--repo o/r] [--since iso] [--trigger comment ...] [--quiet s] [--timeout s] [--interval s]"
+USAGE="usage: watch-pr.sh <pr-number> --bot <login> [--bot <login> ...] [--trigger comment ...] [--since iso] [--timeout s]"
 PR="${1:?$USAGE}"
 shift
-REPO="" SINCE="" QUIET=60 TIMEOUT=900 INTERVAL=30
+SINCE="" TIMEOUT=900
+QUIET=60 INTERVAL=30
 BOTS=() TRIGGERS=()
 while [ $# -gt 0 ]; do
   case "$1" in
     --bot) BOTS+=("${2%\[bot\]}"); shift 2 ;;
-    --repo) REPO="$2"; shift 2 ;;
     --since) SINCE="$2"; shift 2 ;;
     --trigger) TRIGGERS+=("$2"); shift 2 ;;
-    --quiet) QUIET="$2"; shift 2 ;;
     --timeout) TIMEOUT="$2"; shift 2 ;;
-    --interval) INTERVAL="$2"; shift 2 ;;
     *) echo "unknown arg: $1" >&2; exit 1 ;;
   esac
 done
 [ "${#BOTS[@]}" -gt 0 ] || { echo "$USAGE" >&2; exit 1; }
 
-[ -n "$REPO" ] || REPO=$(gh repo view --json nameWithOwner --jq .nameWithOwner) ||
-  { echo "ERROR gh could not find the repo. Pass --repo."; exit 3; }
+REPO=$(gh repo view --json nameWithOwner --jq .nameWithOwner) ||
+  { echo "ERROR gh could not find the repo. Run from inside the checkout."; exit 3; }
 BOTS_JSON=$(printf '%s\n' "${BOTS[@]}" | jq -R . | jq -sc .)
 
 # Comments post in order, so the first one has the earliest timestamp.

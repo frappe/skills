@@ -39,10 +39,15 @@ Bots post top-level comments (`issues/<n>/comments`), inline comments (`pulls/<n
 
 1. Read the comments that already exist before waiting.
 2. Right after the push, watch, with one `--bot` per review bot:
+
    ```bash
    bash <this skill's directory>/scripts/watch-pr.sh <n> --bot <login> [--bot <login> ...] [--trigger "<comment>" ...]
    ```
+
    Pass one `--trigger` for each bot that reviews only when asked. The script posts each comment once, before it watches. Exit 0 = every bot posted after the push and then went quiet, 2 = timeout, 3 = query failed.
+
+   After a timeout, read the comments, then watch again with `--since <since>`, where `<since>` is the value the previous run printed. Bots that already posted in this round still count. Do not pass `--trigger` again.
+
 3. Triage every bot finding as **fix**, **decline**, or **ask**:
    - Grade it with the severities in [review/verdict.md](../review/verdict.md): blocker, issue, or nit.
    - Fix blockers and issues that hold up. Fix a nit when it is cheap and in a file the PR touches. Otherwise, decline it.
