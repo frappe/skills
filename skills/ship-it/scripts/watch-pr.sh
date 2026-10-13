@@ -13,9 +13,6 @@
 # <since> defaults to the current UTC time: start the watch right after the
 # push. Each --trigger posts its <comment> first (for bots that review only
 # when asked), and <since> becomes the first posted comment's server timestamp.
-#
-# Claude Code: run through the Monitor tool (persistent: true) so each event
-# re-invokes you. Codex: run in the foreground with a long timeout.
 
 set -u -o pipefail
 
