@@ -8,7 +8,7 @@
 #   - every --bot has posted or edited something at or after <since>, AND
 #   - no watched bot has posted or edited anything for --quiet seconds,
 #     so a bot that edits a "reviewing..." placeholder is not cut off.
-# Exit 2 on timeout, exit 3 if the gh queries fail. Both print what was seen.
+# Exit 2 on timeout, exit 3 when any gh request fails. Both print what was seen.
 #
 # <since> defaults to the current UTC time: start the watch right after the
 # push. Each --trigger posts its <comment> first (for bots that review only
@@ -38,14 +38,16 @@ while [ $# -gt 0 ]; do
 done
 [ "${#BOTS[@]}" -gt 0 ] || { echo "$USAGE" >&2; exit 1; }
 
-[ -n "$REPO" ] || REPO=$(gh repo view --json nameWithOwner --jq .nameWithOwner)
+[ -n "$REPO" ] || REPO=$(gh repo view --json nameWithOwner --jq .nameWithOwner) ||
+  { echo "ERROR gh could not find the repo. Pass --repo."; exit 3; }
 BOTS_JSON=$(printf '%s\n' "${BOTS[@]}" | jq -R . | jq -sc .)
 
 # Comments post in order, so the first one has the earliest timestamp.
 if [ "${#TRIGGERS[@]}" -gt 0 ]; then
   SINCE=""
   for TRIGGER in "${TRIGGERS[@]}"; do
-    AT=$(gh api "repos/$REPO/issues/$PR/comments" -f body="$TRIGGER" --jq .created_at)
+    AT=$(gh api "repos/$REPO/issues/$PR/comments" -f body="$TRIGGER" --jq .created_at) ||
+      { echo "ERROR gh could not post \"$TRIGGER\" on $REPO#$PR"; exit 3; }
     echo "TRIGGER posted \"$TRIGGER\" at $AT"
     [ -n "$SINCE" ] || SINCE=$AT
   done
@@ -59,12 +61,14 @@ trap 'rm -f "$SEEN"' EXIT
 # REST logins carry a [bot] suffix; strip it so --bot accepts either form.
 # `edited` is updated_at: a bot that edits one summary comment in place
 # shows up as activity, as does a bot that posts a new comment each round.
+# The group runs in a subshell, so `exit 1` ends only the group, and
+# pipefail makes snapshot fail when any of the three requests fails.
 snapshot() {
   {
     gh api "repos/$REPO/issues/$PR/comments" --paginate \
-      --jq '.[]|{who:.user.login, at:.created_at, edited:.updated_at, url:.html_url, kind:"summary", body:.body}'
+      --jq '.[]|{who:.user.login, at:.created_at, edited:.updated_at, url:.html_url, kind:"summary", body:.body}' || exit 1
     gh api "repos/$REPO/pulls/$PR/comments" --paginate \
-      --jq '.[]|{who:.user.login, at:.created_at, edited:.updated_at, url:.html_url, kind:"inline", body:.body}'
+      --jq '.[]|{who:.user.login, at:.created_at, edited:.updated_at, url:.html_url, kind:"inline", body:.body}' || exit 1
     gh api "repos/$REPO/pulls/$PR/reviews" --paginate \
       --jq '.[]|select(.submitted_at != null)|{who:.user.login, at:.submitted_at, edited:.submitted_at, url:.html_url, kind:"review", body:.body}'
   } 2>/dev/null | jq -c --argjson bots "$BOTS_JSON" \
