@@ -51,7 +51,7 @@ Bots post top-level comments (`issues/<n>/comments`), inline comments (`pulls/<n
    Each time you watch again in the same round, pass `--since <since>` with the value the previous run printed, so bots that already posted still count. Do not pass `--trigger` again.
 
 3. Write each bot finding as a finding in the [review/verdict.md](../review/verdict.md) format: id `b<n>`, the bot's login as `reviewer`, and verdict.md's severity and action. Its Rounds rules apply too. Use action `no-op` with the outcome `declined: <reason>` when the finding contradicts a recorded decision or asks to contort the code only to satisfy the bot.
-4. Run steps 1 to 3 of the Fix loop in [steps/review.md](review.md) on these findings: the fixer subagent for `auto-fix`, one batched message for `ask-user`. Tell the fixer to commit defect fixes as `fix:` and the rest as `tidy:`.
+4. Run steps 1 to 3 of the Fix loop in [steps/review.md](review.md) on these findings: the fixer subagent for `auto-fix`, one batched message for `ask-user`.
 5. Close the round, in this order:
    - Push the fixes (step 7 of [SKILL.md](../SKILL.md)).
    - Reply on each inline thread: what was fixed, or why it was declined.

@@ -86,7 +86,7 @@ Run the repo's own formatter and linters with their fix modes: look at `package.
 
 ### 7. Commit and push
 
-Commit in logical groups with conventional messages (`feat:`, `fix:`, `refactor:`, `docs:`, `test:`, `chore:`). Improvements from the taste review go in their own `tidy:` commits, separate from behavior changes. Commit messages describe the change only.
+Commit in logical groups with conventional messages (`feat:`, `fix:`, `refactor:`, `docs:`, `test:`, `chore:`). Review fixes follow the commit rule in the Fix loop of [steps/review.md](steps/review.md). Keep `tidy:` commits separate from behavior changes. Commit messages describe the change only.
 
 Push safely:
 

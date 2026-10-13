@@ -23,7 +23,7 @@ Give each reviewer:
 2. Send the `auto-fix` findings to one fresh fixer subagent. Its brief:
    - For each finding, name the invariant it violates and every place in the changed code where that same invariant must hold. Fix all of them in this round.
    - Make the smallest change that restores the invariant. When the finding sits inside a component the intent does not need, remove the component.
-   - Taste fixes go in `tidy:` commits, correctness fixes in `fix:` commits.
+   - Defect fixes go in `fix:` commits, the rest in `tidy:` commits.
    - Run one focused check on the changed area (the tests near it), not the full suite.
 3. Present the `ask-user` findings to the user in one message (format in [review/ask.md](../review/ask.md)). Apply their answers: fixes go to a fixer subagent, skips become decisions.
 4. Close the round with its round comment ([review/verdict.md](../review/verdict.md)): post it on the PR when one exists, otherwise save it for step 8.
