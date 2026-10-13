@@ -33,6 +33,7 @@ Before publishing, read the title and the Summary paragraph on their own. A read
 **Tidy commits:** <each tidy: commit, one line each>
 **Decisions:** <each ask-user finding the user skipped, with their reason>
 **Follow-ups:** <non-blocking findings left after the review loop>
+**Unfinished bot reviews:** <each review bot that did not finish, one per line>
 **Declined to judge:** <what the taste reviewer chose not to judge>
 
 <!-- ship-it: reviewed=<full sha> tier=<prod|wip> -->

@@ -50,7 +50,7 @@ Bots post top-level comments (`issues/<n>/comments`), inline comments (`pulls/<n
 
    A bot can post a placeholder first and edit its findings in later. After exit 0, read each bot's latest comment. When one says its review is still running, watch again. Pass `--since` with the value the previous run printed, and do not pass `--trigger` again.
 
-   After exit 2, read the comments. A bot that still says its review is running, or has not posted, did not finish. Note in the PR body's `## Review` section that its review did not finish. Continue with the findings you have.
+   After exit 2, read the comments. A bot that still says its review is running, or has not posted, did not finish. List it under **Unfinished bot reviews** in the PR body's `## Review` section ([steps/pr.md](pr.md)). Continue with the findings you have.
 
 3. Write each bot finding as a finding in the [review/verdict.md](../review/verdict.md) format: id `b<n>`, the bot's login as `reviewer`, and verdict.md's severity and action. Its Rounds rules apply too. Use action `no-op` with the outcome `declined: <reason>` when the finding contradicts a recorded decision or asks to contort the code only to satisfy the bot.
 4. Run steps 1 to 3 of the Fix loop in [steps/review.md](review.md) on these findings: the fixer subagent for `auto-fix`, one batched message for `ask-user`.
@@ -58,7 +58,7 @@ Bots post top-level comments (`issues/<n>/comments`), inline comments (`pulls/<n
    - Push the fixes (step 7 of [SKILL.md](../SKILL.md)).
    - Reply on each inline thread: what was fixed, or why it was declined.
    - Post the round comment (Fix loop step 4) with every bot finding and its outcome. A top-level comment reaches every bot, including those that skip inline threads.
-   - Update the PR body's `## Review` section: decisions and follow-ups.
+   - Update the PR body's `## Review` section: decisions, follow-ups, and unfinished bot reviews.
    - Start the next round. Watching the bots again replaces the Fix loop's re-review with new subagents.
 
 Replies and the round comment carry plain text only, so no bot reads them as a command. Only `--trigger` posts commands, each as its own comment.
