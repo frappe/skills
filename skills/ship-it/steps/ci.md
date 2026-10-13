@@ -46,7 +46,9 @@ Bots post top-level comments (`issues/<n>/comments`), inline comments (`pulls/<n
 
    Pass one `--trigger` for each bot that reviews only when asked. The script posts each comment once, before it watches. Exit 0 = every bot posted after the push and then went quiet, 2 = timeout, 3 = query failed.
 
-   After a timeout, read the comments, then watch again with `--since <since>`, where `<since>` is the value the previous run printed. Bots that already posted in this round still count. Do not pass `--trigger` again.
+   A bot can post a placeholder first and edit its findings in later. After exit 0, read each bot's latest comment. When one says its review is still running, watch again. After a timeout, read the comments, then watch again.
+
+   Each time you watch again in the same round, pass `--since <since>` with the value the previous run printed, so bots that already posted still count. Do not pass `--trigger` again.
 
 3. Write each bot finding as a finding in the [review/verdict.md](../review/verdict.md) format: id `b<n>`, the bot's login as `reviewer`, and verdict.md's severity and action. Its Rounds rules apply too. Use action `no-op` with the outcome `declined: <reason>` when the finding contradicts a recorded decision or asks to contort the code only to satisfy the bot.
 4. Run steps 1 to 3 of the Fix loop in [steps/review.md](review.md) on these findings: the fixer subagent for `auto-fix`, one batched message for `ask-user`. Tell the fixer to commit defect fixes as `fix:` and the rest as `tidy:`.
