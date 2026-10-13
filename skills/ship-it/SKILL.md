@@ -31,7 +31,9 @@ Read the repo's `AGENTS.md` for a line `Ship tier: prod` or `Ship tier: wip`. An
 
 Read a step's detail file when you reach that step, not before.
 
-**Done** means: the PR is open and ready (not draft), CI is green, and in prod the bot loop has stopped by its rule. Report to the user and ask them to review and merge. Stop there.
+Steps 4 to 9 can add commits after the review: test fixes, docs, lint, CI fixes, and bot fixes. Before step 8 opens or updates the PR, and before you report done, compare `HEAD` with the last reviewed sha. When commits follow it, re-review `<sha>..HEAD` as in [steps/review.md](steps/review.md). Then put the new reviewed sha in the `## Review` marker.
+
+**Done** means: the PR is open and ready (not draft), the `## Review` marker names `HEAD`, CI is green, and in prod the bot loop has stopped by its rule. Report to the user and ask them to review and merge. Stop there.
 
 ## Resume
 

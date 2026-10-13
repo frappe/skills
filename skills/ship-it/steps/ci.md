@@ -61,4 +61,4 @@ Replies and the round comment carry plain text only, so no bot reads them as a c
 
 Stop when the latest round of every bot reports nothing you accepted as a blocker or issue. From round 3 on, only blockers keep the loop going.
 
-**Done** when CI is green on the final head and the bot loop has stopped. Read the comments one last time, then report: the verdict per bot, what was fixed and declined, the commits pushed, and anything open. Ask the user to review and merge.
+**Done** when CI is green on the final head, the `## Review` marker names that head (see "Pipeline" in [SKILL.md](../SKILL.md)), and the bot loop has stopped. Read the comments one last time, then report: the verdict per bot, what was fixed and declined, the commits pushed, and anything open. Ask the user to review and merge.

@@ -99,4 +99,4 @@ The title is a conventional commit line for the whole change.
 - Check the upload: `gh pr view <n> --json body` has no `./<file>` reference left, and each one became a `github.com/user-attachments/...` URL. When `gh` appended an upload at the end instead of rewriting its reference (possible for videos), move that URL to the reference's place, on its own line, with `gh pr edit --body-file`.
 - Then post the saved round comments from step 3, oldest first: `gh pr comment <n> --body-file <round file>`.
 
-**Done** when the PR exists, is not a draft, every live scenario's evidence renders in the body, the body has the `ship-it` marker with the current reviewed sha, and every review round so far has its comment on the PR.
+**Done** when the PR exists, is not a draft, every live scenario's evidence renders in the body, the body's `ship-it` marker names `HEAD`, and every review round so far has its comment on the PR.
