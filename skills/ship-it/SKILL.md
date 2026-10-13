@@ -75,7 +75,7 @@ Reviewers return findings in the format in [review/verdict.md](review/verdict.md
 
 ### 2. Rebase
 
-`git fetch origin`, then rebase onto `origin/<base>`. Also take in commits already on `origin/<branch>` that are missing locally. Resolve conflicts in the spirit of both sides and the intent. When a conflict needs a product decision, ask. When the diff against the base is empty after rebase, stop: there is nothing to ship.
+`git fetch origin`. When `origin/<branch>` exists, record its sha for step 7 and take in its commits that are missing locally. Then rebase onto `origin/<base>`. Resolve conflicts in the spirit of both sides and the intent. When a conflict needs a product decision, ask. When the diff against the base is empty after rebase, stop: there is nothing to ship.
 
 ### 5. Docs (prod)
 
@@ -91,6 +91,8 @@ Commit in logical groups with conventional messages (`feat:`, `fix:`, `refactor:
 
 Push safely:
 
-- `git fetch origin`, then confirm `origin/<branch>` (when it exists) is an ancestor of `HEAD`. When it is not, the remote has work you have not taken in: go back to step 2.
-- After a rebase that rewrote pushed commits, push with `--force-with-lease=<branch>:<sha you fetched>`. Otherwise a plain push.
+- `git fetch origin`, then compare `origin/<branch>` with the sha recorded in step 2. When it moved, the remote has work you have not taken in: go back to step 2.
+- When it did not move and the rebase rewrote pushed commits, push with `--force-with-lease=<branch>:<recorded sha>`. Otherwise a plain push.
+- When this run did not go through step 2 (a resume at step 7), use a plain push. When the push is rejected, go back to step 2.
+- After the push, record the pushed sha as the new recorded sha, so later pushes from step 9 compare against it.
 - Note the push time. The bot loop in [steps/ci.md](steps/ci.md) uses it.
