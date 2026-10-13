@@ -1,6 +1,6 @@
 ---
 name: ship-it
-description: Take finished work to a merge-ready PR in one pass - intent, review, live test, docs, lint, PR, and CI. User-invoked only - run /ship-it [wip] ["intent"], or /ship-it on a branch with an open PR to resume or babysit it.
+description: Take finished work to a merge-ready PR in one pass - intent, review, live test, docs, lint, PR, and CI. User-invoked only - run /ship-it [wip|prod] ["intent"], or /ship-it on a branch with an open PR to resume or babysit it.
 disable-model-invocation: true
 ---
 
@@ -10,7 +10,7 @@ You own the work from "code is done" to "PR is ready for the human to merge". Ru
 
 ## Tier
 
-Use the prod tier by default. When the user runs `/ship-it wip`, use the wip tier for this run. On resume without a tier argument, use the tier in the `## Review` marker (see Resume).
+Use the prod tier by default. A tier argument (`/ship-it wip` or `/ship-it prod`) sets the tier for this run. On resume without a tier argument, use the tier in the `## Review` marker (see Resume).
 
 - **prod**: a project in production. Every step runs.
 - **wip**: a personal or work-in-progress project. Steps marked – are skipped.
