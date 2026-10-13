@@ -5,7 +5,7 @@
 #
 # Streams review bot activity on a PR: one line per new or edited comment or
 # review from a watched bot. Exits 0 when the round is complete:
-#   - every --bot has posted or edited something after <since>, AND
+#   - every --bot has posted or edited something at or after <since>, AND
 #   - no watched bot has posted or edited anything for --quiet seconds,
 #     so a bot that edits a "reviewing..." placeholder is not cut off.
 # Exit 2 on timeout, exit 3 if the gh queries fail. Both print what was seen.
@@ -91,7 +91,7 @@ while true; do
   done <<< "$SNAP"
 
   WAITING=$(printf '%s' "$SNAP" | jq -sr --argjson bots "$BOTS_JSON" --arg since "$SINCE" \
-    '[.[]|select(.edited > $since)|.who] as $active | $bots - $active | join(" ")')
+    '[.[]|select(.edited >= $since)|.who] as $active | $bots - $active | join(" ")')
   QUIET_FOR=$(( $(date +%s) - LAST_EVENT ))
 
   if [ -z "$WAITING" ] && [ "$QUIET_FOR" -ge "$QUIET" ]; then
