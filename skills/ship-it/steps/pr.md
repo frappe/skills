@@ -93,7 +93,7 @@ A **two-way door** is cheap to roll back: revert the commit and nothing is lost.
     --attach '<path>#<alt text>' ...
   ```
   `--attach` (gh 2.101 or later) uploads each file and rewrites its `./<file>` reference in the body to the uploaded URL.
-- Existing PR: `gh pr edit <n> --body-file <file> --attach ...`. Keep any text the human wrote in the body.
+- Existing PR: `gh pr edit <n> --body-file <file> --attach ...`. Keep any text the human wrote in the body. When the PR is a draft, then run `gh pr ready <n>`.
 - Check the upload: `gh pr view <n> --json body` has no `./<file>` reference left, and each one became a `github.com/user-attachments/...` URL. When `gh` appended an upload at the end instead of rewriting its reference (possible for videos), move that URL to the reference's place, on its own line, with `gh pr edit --body-file`.
 - Then post the saved round comments from step 3, oldest first: `gh pr comment <n> --body-file <round file>`.
 
