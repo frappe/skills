@@ -76,7 +76,7 @@ Reviewers return findings in the format in [review/verdict.md](review/verdict.md
 
 ### 2. Rebase
 
-`git fetch origin`. When `origin/<branch>` exists, record its sha for step 7 and take in the remote commits whose changes are not in `HEAD`: `git cherry HEAD origin/<branch>` marks them with `+`. A commit that an earlier rebase rewrote has the same change in `HEAD`, so it shows `-` and is not taken in again. When a rebase conflict changed a commit, it can show `+` though its change is already in `HEAD`; skip it. Then rebase onto `origin/<base>`. Resolve conflicts in the spirit of both sides and the intent. When a conflict needs a product decision, ask. When the diff against the base is empty after rebase, stop: there is nothing to ship.
+`git fetch origin`. When `origin/<branch>` exists, record its sha for step 7 and take in the remote commits whose changes are not in `HEAD`: `git cherry HEAD origin/<branch>` marks them with `+`. A commit that an earlier rebase rewrote has the same change in `HEAD`, so it shows `-` and is not taken in again. When a rebase conflict changed a commit, it can show `+` though its change is already in `HEAD`; skip it. `git cherry` does not list merge commits: for each one in `git log --merges HEAD..origin/<branch>`, compare its changes with `HEAD` and take in what `HEAD` lacks, such as a hand-resolved conflict. Then rebase onto `origin/<base>`. Resolve conflicts in the spirit of both sides and the intent. When a conflict needs a product decision, ask. When the diff against the base is empty after rebase, stop: there is nothing to ship.
 
 ### 5. Docs (prod)
 
@@ -92,9 +92,9 @@ Commit in logical groups with conventional messages (`feat:`, `fix:`, `refactor:
 
 Push safely:
 
-- `git fetch origin`, then compare `origin/<branch>` with the sha recorded in step 2. When it moved, the remote has work you have not taken in: go back to step 2.
-- When it did not move and the rebase rewrote pushed commits, push with `--force-with-lease=<branch>:<recorded sha>`. Otherwise a plain push.
-- When this run did not go through step 2 (a resume at step 7), use a plain push. When the push is rejected because the remote has commits that `HEAD` does not (`non-fast-forward` or `fetch first`), go back to step 2.
-- Any other rejection (permissions, branch protection, a server-side hook) does not change after a rebase. Stop and show the error to the user.
+- `git fetch origin`. When this run has not recorded the sha of `origin/<branch>` (a resume at step 7), record it now and take in new remote commits as in step 2.
+- Compare `origin/<branch>` with the recorded sha. When it moved, the remote has work you have not taken in: go back to step 2.
+- When `origin/<branch>` does not exist or is an ancestor of `HEAD`, use a plain push. Otherwise `HEAD` rewrote pushed commits, in this run or an earlier one: push with `--force-with-lease=<branch>:<recorded sha>`.
+- When the push is rejected because the remote changed after the fetch (`non-fast-forward`, `fetch first`, or `stale info`), go back to step 2. Any other rejection (permissions, branch protection, a server-side hook) does not change after a rebase. Stop and show the error to the user.
 - After the push, record the pushed sha as the new recorded sha, so later pushes from step 9 compare against it.
 - Note the push time. The bot loop in [steps/ci.md](steps/ci.md) uses it.
