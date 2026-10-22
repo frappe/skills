@@ -7,9 +7,9 @@
     python cloud.py create --team T --title "Docs" --plan vm-1 [--region mumbai]
     python cloud.py bench --server server-xxxx       # Pilot admin session for the VM
     python cloud.py site --server S --name docs.mumbai.frappe.cloud
-    python cloud.py builder --server S --site SITE [--branch master]
-    python cloud.py site-key --server S --site SITE  # API key -> .cloudv2/<site>.json (build.py reads it)
-    python cloud.py login-url --server S --site SITE # one-time Administrator login link (editor checks)
+    python cloud.py app --server S --site SITE --name builder [--branch master]
+    python cloud.py site-key --server S --site SITE  # Administrator API key -> .cloudv2/<site>.json
+    python cloud.py login-url --server S --site SITE # one-time Administrator login link for a browser
     python cloud.py task --server S TASK_ID
 
 State lives in ./.cloudv2 (mode 0600): Central cookies and CSRF, Pilot cookies per VM, site keys.
@@ -61,8 +61,9 @@ class Client:
 			self.jar.load(ignore_discard=True, ignore_expires=True)
 		self.opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(self.jar))
 		self.headers: dict[str, str] = {}
+		self.reauthenticate = None  # called once on a 401, then the request is retried
 
-	def request(self, method: str, path: str, payload=None, headers=None, raw=False):
+	def request(self, method: str, path: str, payload=None, headers=None, raw=False, retried=False):
 		url = path if path.startswith("http") else self.base + path
 		data = json.dumps(payload).encode() if payload is not None else None
 		request = urllib.request.Request(url, data=data, method=method)
@@ -76,6 +77,9 @@ class Client:
 		except urllib.error.HTTPError as error:
 			body = error.read()
 			self.save()
+			if error.code == 401 and self.reauthenticate and not retried:
+				self.reauthenticate()
+				return self.request(method, path, payload, headers, raw, retried=True)
 			message = body.decode(errors="replace")
 			raise SystemExit(f"{method} {url} -> {error.code}: {readable_error(message)}") from None
 		self.save()
@@ -197,22 +201,30 @@ def cmd_create(args) -> None:
 
 
 def pilot(server: str) -> Client:
+	"""A Pilot admin client. Its session expires within hours, so a 401 reopens it through Central."""
 	saved = load_json("servers.json").get(server)
 	if not saved:
-		sys.exit(f"unknown server {server}: run cloud.py create or cloud.py bench first")
-	return Client(saved["gateway"], f"pilot-{server}.cookies")
+		open_bench(server)
+		saved = load_json("servers.json")[server]
+	client = Client(saved["gateway"], f"pilot-{server}.cookies")
+	client.reauthenticate = lambda: open_bench(server, client)
+	return client
+
+
+def open_bench(server: str, client: Client | None = None) -> dict:
+	# get_bench_link is GET-only; a POST answers "Not permitted".
+	url = method(central(), "GET", "central.api.sso.get_bench_link", server=server)["url"]
+	parsed = urllib.parse.urlparse(url)
+	servers = load_json("servers.json")
+	servers.setdefault(server, {})["gateway"] = f"{parsed.scheme}://{parsed.netloc}"
+	save_json("servers.json", servers)
+	client = client or Client(servers[server]["gateway"], f"pilot-{server}.cookies")
+	sid = urllib.parse.parse_qs(parsed.query)["sid"][0]
+	return client.request("POST", "/api/v1/auth/session", {"sid": sid}, retried=True)
 
 
 def cmd_bench(args) -> None:
-	client = central()
-	# get_bench_link is GET-only; a POST answers "Not permitted".
-	url = method(client, "GET", "central.api.sso.get_bench_link", server=args.server)["url"]
-	parsed = urllib.parse.urlparse(url)
-	servers = load_json("servers.json")
-	servers.setdefault(args.server, {})["gateway"] = f"{parsed.scheme}://{parsed.netloc}"
-	save_json("servers.json", servers)
-	sid = urllib.parse.parse_qs(parsed.query)["sid"][0]
-	print(pilot(args.server).request("POST", "/api/v1/auth/session", {"sid": sid}))
+	print(open_bench(args.server))
 
 
 def wait_task(client: Client, task: dict) -> dict:
@@ -234,20 +246,23 @@ def cmd_site(args) -> None:
 	print("site", args.name, "created")
 
 
-def cmd_builder(args) -> None:
-	"""The marketplace pins an older Builder commit whose install fails on Frappe develop
-	(Web Page View index), so fetch it, move it to the branch head, then install."""
+def cmd_app(args) -> None:
+	"""Fetch a marketplace app onto the bench, optionally move it to a branch head, install it.
+	The marketplace pins a commit; when that commit fails to install (Builder's does on Frappe
+	develop), pass --branch so the app is at the branch head before the site install runs."""
 	client = pilot(args.server)
 	apps = {app["name"]: app for app in client.request("GET", "/api/v1/apps")}
-	if "builder" not in apps:
-		wait_task(client, client.request("POST", "/api/v1/apps", {"name": "builder"}))
-	wait_task(client, client.request("POST", "/api/v1/apps/builder/actions/switch-branch", {"branch": args.branch}, headers={"Idempotency-Key": f"builder-{args.branch}-{int(time.time())}"}))
+	if args.name not in apps:
+		wait_task(client, client.request("POST", "/api/v1/apps", {"name": args.name}))
+	if args.branch:
+		key = f"{args.name}-{args.branch}-{int(time.time())}"
+		wait_task(client, client.request("POST", f"/api/v1/apps/{args.name}/actions/switch-branch", {"branch": args.branch}, headers={"Idempotency-Key": key}))
 	installed = {app["name"] for app in client.request("GET", f"/api/v1/sites/{args.site}/apps")["apps"]}
-	if "builder" not in installed:
-		wait_task(client, client.request("POST", f"/api/v1/sites/{args.site}/apps", {"app": "builder"}))
+	if args.name not in installed:
+		wait_task(client, client.request("POST", f"/api/v1/sites/{args.site}/apps", {"app": args.name}))
 	unstick(client, args.site)
-	builder = client.request("GET", "/api/v1/apps/builder")
-	print(f"builder {builder['installed_version']} ({builder['current_commit']}) on {args.site}")
+	app = client.request("GET", f"/api/v1/apps/{args.name}")
+	print(f"{args.name} {app['installed_version']} ({app['current_commit']}, {app['branch']}) on {args.site}")
 
 
 def unstick(client: Client, site: str) -> None:
@@ -281,7 +296,7 @@ def cmd_site_key(args) -> None:
 		sys.exit("no CSRF token in the desk page; open the login URL in a browser instead")
 	keys = site.request("POST", "/api/method/frappe.core.doctype.user.user.generate_keys", {"user": "Administrator"}, headers={"X-Frappe-CSRF-Token": match.group(1)})["message"]
 	save_json(f"{args.site}.json", {"site": f"https://{args.site}", "api_key": keys["api_key"], "api_secret": keys["api_secret"]})
-	print(f"API key saved to .cloudv2/{args.site}.json")
+	print(f"API key saved to .cloudv2/{args.site}.json (use: Authorization: token <api_key>:<api_secret>)")
 
 
 def cmd_task(args) -> None:
@@ -317,11 +332,12 @@ def main() -> None:
 	site.add_argument("--server", required=True)
 	site.add_argument("--name", required=True)
 	site.set_defaults(run=cmd_site)
-	builder = commands.add_parser("builder")
-	builder.add_argument("--server", required=True)
-	builder.add_argument("--site", required=True)
-	builder.add_argument("--branch", default="master")
-	builder.set_defaults(run=cmd_builder)
+	app = commands.add_parser("app")
+	app.add_argument("--server", required=True)
+	app.add_argument("--site", required=True)
+	app.add_argument("--name", required=True, help="marketplace app name, such as builder")
+	app.add_argument("--branch", help="move the app to this branch head before installing")
+	app.set_defaults(run=cmd_app)
 	for name, run in (("site-key", cmd_site_key), ("login-url", cmd_login_url)):
 		command = commands.add_parser(name)
 		command.add_argument("--server", required=True)

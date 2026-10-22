@@ -1,4 +1,0 @@
-playwright
-RestrictedPython
-markdown2
-pyyaml

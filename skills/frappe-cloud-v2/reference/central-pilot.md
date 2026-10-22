@@ -1,6 +1,6 @@
-# Frappe Cloud v2: Central and Pilot
+# Central and Pilot
 
-What `cloud.py` does, for when a step fails. Central (`frappe/central`, served at dashboard.frappe.io) owns teams, billing and server creation; Atlas runs the VMs; Pilot (`frappe/pilot`) runs the bench on each VM and exposes an admin API at the server's `gateway_url`.
+What `cloud.py` does, for when a step fails or a task needs a call it does not wrap. Central (`frappe/central`, served at dashboard.frappe.io) owns teams, billing and server creation; Atlas runs the VMs; Pilot (`frappe/pilot`) runs the bench on each VM and exposes an admin API at the server's `gateway_url`.
 
 ## Central
 
@@ -13,11 +13,13 @@ What `cloud.py` does, for when a step fails. Central (`frappe/central`, served a
 
 ## Pilot (admin API under `/api/v1`)
 
-- **Session:** `get_bench_link` returns `<gateway>/?sid=<jwt>`; POST `/auth/session` with `{"sid"}` sets the session cookie (bench scope).
+- **Session:** `get_bench_link` returns `<gateway>/?sid=<jwt>`; POST `/auth/session` with `{"sid"}` sets the session cookie (bench scope). The session expires within hours and then every call answers `401 authentication_required`; `cloud.py` reopens it through Central and retries once.
 - **Long work returns a task:** poll `/tasks/<id>` until `success|failed|cancelled`; `/tasks/<id>/output/content` holds the log.
 - **Site:** POST `/sites` `{"name", "apps": []}` (send an `Idempotency-Key`).
-- **Builder:** the marketplace entry pins an older commit whose `after_install` fails on Frappe develop (it indexes `Web Page View`, now a virtual doctype). Fetch the app (POST `/apps` `{"name": "builder"}`), move it to the branch head (POST `/apps/builder/actions/switch-branch` `{"branch": "master"}`, which rebuilds assets), then install on the site (POST `/sites/<site>/apps` `{"app": "builder"}`).
+- **Apps:** GET `/marketplace/apps` lists the registry; POST `/apps` `{"name": APP}` fetches one onto the bench at the commit the registry pins; POST `/sites/<site>/apps` `{"app": APP}` installs it. Fetching with `"sites": [...]` installs in the same task, so a failing install leaves the app half-done; fetch first, then install.
+- **A pinned commit that fails:** Builder's marketplace commit failed in `after_install` on Frappe develop (it indexed `Web Page View`, now a virtual doctype). POST `/apps/<app>/actions/switch-branch` `{"branch": "master"}` moves the app to the branch head (even when it is already on that branch), rebuilds assets and migrates the sites that have it; install after that.
 - **Stale maintenance flag:** after a failed install the site's API can answer `503 SessionStopped` while `site_config` shows `maintenance_mode: 0` (workers hold the old config). PATCH `/sites/<site>/configuration` `{"maintenance_mode": 0}` rewrites the file and they reload it.
 - **Not available on Central-managed VMs:** bench restart and other bench management (`bench_management_forbidden`).
 - **Site login:** POST `/sites/<site>/login` returns a one-time URL that signs in Administrator. `site-key` follows it, reads the CSRF token from the desk page, and calls `frappe.core.doctype.user.user.generate_keys` (this rotates Administrator's secret).
-- **Server scripts** are on by default on Pilot benches (`server_script_enabled` in common config), which the Doc Page data script needs.
+- **Server scripts** are on by default on Pilot benches (`server_script_enabled` in common config).
+- **Error Log "Chromium exited with code 127 … libnss3.so"** after each Builder publish: Builder's preview-image job, and the image lacks Chromium's libraries. Pages are unaffected.
