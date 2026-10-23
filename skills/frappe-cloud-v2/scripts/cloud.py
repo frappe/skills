@@ -139,6 +139,13 @@ def cmd_teams(args) -> None:
 		print(f"{team['name']}\t{team['label']}\trole={team['role']}\tmembers={team['members']}")
 
 
+def active_regions(client: Client, team: str) -> list[dict]:
+	regions = [r for r in method(client, "GET", "central.api.servers.list_instances", team=team) if r["status"] == "Active"]
+	if not regions:
+		sys.exit(f"no active region for team {team}")
+	return regions
+
+
 def newest_pilot_image(client: Client, team: str, region: str) -> dict:
 	"""The Server picker's choice: the newest available Frappe (pilot) build without a baked site."""
 	images = method(client, "GET", "central.api.images.list_images", team=team, region=region, offering="pilot", flow="Server")["items"]
@@ -148,8 +155,8 @@ def newest_pilot_image(client: Client, team: str, region: str) -> dict:
 
 def cmd_options(args) -> None:
 	client = central()
-	regions = method(client, "GET", "central.api.servers.list_instances", team=args.team)
-	print("regions:", ", ".join(f"{r['region']} ({r['display_name']})" for r in regions if r["status"] == "Active"))
+	regions = active_regions(client, args.team)
+	print("regions:", ", ".join(f"{r['region']} ({r['display_name']})" for r in regions))
 	region = args.region or regions[0]["region"]
 	image = newest_pilot_image(client, args.team, region)
 	print(f"image: {image['id']} {image['title']} frappe={image['tags'].get('frappe_version')} pilot={image['tags'].get('pilot_version')}")
@@ -168,7 +175,7 @@ def cmd_options(args) -> None:
 
 def cmd_create(args) -> None:
 	client = central()
-	region = args.region or method(client, "GET", "central.api.servers.list_instances", team=args.team)[0]["region"]
+	region = args.region or active_regions(client, args.team)[0]["region"]
 	image = args.image or newest_pilot_image(client, args.team, region)["id"]
 	keys = load_json("requests.json")
 	request_key = keys.setdefault(f"{args.team}:{args.title}", str(uuid.uuid4()))  # retries stay idempotent
@@ -190,6 +197,8 @@ def cmd_create(args) -> None:
 		if overview["status"] == "Running" and overview.get("gateway_url"):
 			break
 		time.sleep(10)
+	else:
+		sys.exit(f"server {server} is still {overview['status']} after 10 minutes; run the same create again to keep waiting")
 	servers = load_json("servers.json")
 	servers[server] = {"team": args.team, "gateway": overview["gateway_url"]}
 	save_json("servers.json", servers)
@@ -267,17 +276,30 @@ def cmd_app(args) -> None:
 
 def unstick(client: Client, site: str) -> None:
 	"""A failed install can leave web workers with a stale maintenance flag (API answers
-	503 SessionStopped while site_config says 0); rewriting the config makes them reload it."""
-	client.request("PATCH", f"/api/v1/sites/{site}/configuration", {"maintenance_mode": 0})
-	for _ in range(6):
+	503 SessionStopped while site_config says 0); rewriting the config makes them reload it.
+	A site the owner put in maintenance stays there."""
+	if answers_ping(site, attempts=1):
+		return
+	configuration = f"/api/v1/sites/{site}/configuration"
+	if client.request("GET", configuration).get("maintenance_mode"):
+		print(f"{site} is in maintenance mode; left as it is")
+		return
+	client.request("PATCH", configuration, {"maintenance_mode": 0})
+	if not answers_ping(site, attempts=6):
+		print(f"warning: https://{site}/api/method/ping does not answer pong yet")
+
+
+def answers_ping(site: str, attempts: int) -> bool:
+	for attempt in range(attempts):
+		if attempt:
+			time.sleep(5)
 		try:
 			with urllib.request.urlopen(f"https://{site}/api/method/ping", timeout=30) as response:
 				if b"pong" in response.read():
-					return
-		except urllib.error.HTTPError:
+					return True
+		except OSError:  # HTTP errors, DNS failures and timeouts alike
 			pass
-		time.sleep(5)
-	print(f"warning: https://{site}/api/method/ping does not answer pong yet")
+	return False
 
 
 def login_url(args) -> str:
