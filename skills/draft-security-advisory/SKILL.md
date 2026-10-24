@@ -30,7 +30,7 @@ Give each field its own job, so the four never repeat each other:
 | Field | Contents |
 |---|---|
 | **Summary** | One line: the flaw class and the umbrella surface it sits in ("portal pages", "certain endpoints"). |
-| **Details** | Two to four sentences: the missing or broken control, the preconditions (authenticated or not, kind of role), what the fix does in general terms ("validation was added"), and which release lines are affected. End with the workaround line: "No workaround available; upgrading is required." Amend it only when a real workaround exists. |
+| **Details** | One or two sentences: the missing or broken control, and what the fix does in general terms ("validation was added"). Leave out the preconditions and the affected releases, because Impact and Affected products already hold them. End with the workaround line: "No workaround available; upgrading is required." Amend it only when a real workaround exists. |
 | **Proof of concept** | The attack shape in general terms, e.g. "An authenticated user with a low-privilege role sends a crafted request to an affected endpoint." No payload, endpoint name, or field name. |
 | **Impact** | What the attacker gains, who is exposed, and the minimum privilege needed. |
 
