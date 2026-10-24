@@ -2,6 +2,8 @@
 
 DocTypes are the core data model in Frappe. Each DocType becomes a database table and gets auto-generated CRUD APIs, forms, and list views.
 
+This file shows the JSON format. Before you write a DocType that users open, read [doctype-design.md](./doctype-design.md). It covers naming, field properties, form layout, list view, and permissions.
+
 ## Creating a DocType
 
 Write the JSON definition file and let `bench migrate` create the folder structure. Do NOT `mkdir` DocType directories.
