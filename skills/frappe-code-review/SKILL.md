@@ -233,12 +233,14 @@ perceive ~100ms).
 
 ## 7. Testing
 
-- **Each PR needs decent test coverage** — patch coverage on the diff, not just
-  project coverage. (Frappe target: 85% covered lines in the diff.) Tests should
-  capture the most-used business scenarios.
-- **Regression test every fix.** A bug fix without a test that would have caught
-  it invites the regression back. For extreme-consequence (stateful/compliance)
-  code, go beyond examples — property-based testing (Hypothesis).
+- **New features need decent test coverage**: patch coverage on the diff, not
+  just project coverage. (Frappe target: 85% covered lines in the diff.) Tests
+  should capture the most-used business scenarios.
+- **Regression test non-trivial fixes.** Ask for a test on a bug fix only when
+  the fix is not obvious from the diff or the same bug has come back before. Do
+  not ask on a small, obvious fix or a CI or tooling change. For
+  extreme-consequence (stateful/compliance) code, go beyond examples with
+  property-based testing (Hypothesis).
 - **Flag missing migration/data-patch coverage.** Schema changes and data patches
   are the highest-risk, least-tested area; a change that alters fields or
   migrates data needs a patch tested against a realistic, populated site (empty
