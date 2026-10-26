@@ -18,6 +18,7 @@ State lives in ./.cloudv2 (mode 0600): Central cookies and CSRF, Pilot cookies p
 from __future__ import annotations
 
 import argparse
+import fcntl
 import http.cookiejar
 import json
 import re
@@ -173,16 +174,23 @@ def cmd_options(args) -> None:
 			"-> the owner fills it at", CENTRAL + "/dashboard/billing (Add billing details); no card needed unless required")
 
 
+def request_key(team: str, title: str) -> str:
+	"""One key per team and title, so a retry stays idempotent. The lock makes overlapping creates store the same key."""
+	with state_file("requests.lock").open("w") as lock:
+		fcntl.flock(lock, fcntl.LOCK_EX)
+		keys = load_json("requests.json")
+		key = keys.setdefault(f"{team}:{title}", str(uuid.uuid4()))
+		save_json("requests.json", keys)
+	return key
+
+
 def cmd_create(args) -> None:
 	client = central()
 	region = args.region or active_regions(client, args.team)[0]["region"]
 	image = args.image or newest_pilot_image(client, args.team, region)["id"]
-	keys = load_json("requests.json")
-	request_key = keys.setdefault(f"{args.team}:{args.title}", str(uuid.uuid4()))  # retries stay idempotent
-	save_json("requests.json", keys)
 	action = method(
 		client, "POST", "central.api.servers.create_server", team=args.team, region=region, title=args.title,
-		request_key=request_key, plan=args.plan, offering="pilot", image_id=image, hostname=args.hostname,
+		request_key=request_key(args.team, args.title), plan=args.plan, offering="pilot", image_id=image, hostname=args.hostname,
 	)  # fmt: skip
 	print("queued", action["action"])
 	while action["status"] not in ("Succeeded", "Failed"):
