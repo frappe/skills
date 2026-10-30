@@ -29,6 +29,8 @@ The class name is the DocType name with spaces removed (e.g. "Expense Category" 
 
 Called in this order:
 
+There is no `after_save`. The framework calls `on_update` after the row is written, then `on_change`. A method named `after_save` never runs.
+
 ### On insert (new document)
 1. `before_insert`
 2. `before_naming` (before name is set)
@@ -39,8 +41,7 @@ Called in this order:
 7. (db insert)
 8. `after_insert`
 9. `on_update`
-10. `after_save`
-11. `on_change`
+10. `on_change`
 
 ### On update (existing document)
 1. `before_validate`
@@ -48,18 +49,16 @@ Called in this order:
 3. `before_save`
 4. (db update)
 5. `on_update`
-6. `after_save`
-7. `on_change`
+6. `on_change`
 
 ### On submit (submittable DocTypes)
 1. `before_validate`
 2. `validate`
-3. `before_save`
-4. `before_submit`
-5. `on_submit`
-6. `on_update`
-7. `after_save`
-8. `on_change`
+3. `before_submit`
+4. (db update)
+5. `on_update`
+6. `on_submit`
+7. `on_change`
 
 ### On cancel
 1. `before_cancel`
