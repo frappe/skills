@@ -6,7 +6,7 @@ A collection of agent skills for building [Frappe Framework](https://frappeframe
 
 | Skill | What it covers |
 | ----- | -------------- |
-| `frappe-app-dev` | Full-stack Frappe: DocTypes, controllers, APIs, database/ORM, hooks, permissions, jobs, realtime, caching, testing, app setup, frontend (Desk/Vue/portal), and the bench CLI + site management |
+| `frappe-app-dev` | Frappe conventions and gotchas: DocTypes, controllers, APIs, database, hooks, permissions, jobs, and tests. Also Pilot benches, and getting a test site ready for a PR |
 | `frappe-code-review` | Review checklist for Frappe applications: correctness, security, performance, concurrency, readability, API design, and testing |
 | `code-style` | General code style rules |
 | `technical-writing` | Write documentation, READMEs, commits, pull requests, and release notes in Simplified Technical English |
