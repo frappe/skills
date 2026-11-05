@@ -24,7 +24,7 @@ pilot frappe --site SITE migrate
 
 `pilot dev start` on a frappe-ui app regenerates `frontend/src/types/doctypes.ts`. Keep that file out of commits unless the change is intended.
 
-Code is done when you have run it on that site, as a user with the right role.
+Code is done when you have run it on that site, as a user with the right role, and scanned the files you changed as described under [Code](#code). Report the scan result.
 
 To change Frappe itself or several apps together, use `pilot new NAME --frappe-branch BRANCH`, `pilot -b NAME init`, and `pilot -b NAME new-site`. `pilot new` defaults to `version-16` and MariaDB, while `pilot dev setup` defaults to `develop` and SQLite.
 
@@ -70,6 +70,15 @@ Point the hostname at the port that fits the work:
 - Give every `@frappe.whitelist` `methods=[...]` and a type hint on every parameter. GET requests do not commit, and hints are how Frappe validates arguments.
 - `frappe.qb.get_query` defaults to `ignore_permissions=True`. Pass `False` in user-facing code.
 - A `has_permission` hook must return `True` or `False`. Frappe treats `None` as a denial, so return `True` for users the hook does not restrict.
+
+Check the files you changed with Frappe's rules, which cover type hints, guest access, SQL injection, manual commits, translations, and more:
+
+```sh
+git clone --depth 1 https://github.com/frappe/semgrep-rules.git /tmp/frappe-semgrep-rules   # first time only
+uvx semgrep scan --config /tmp/frappe-semgrep-rules/rules <files you changed>
+```
+
+Name the files, because `--baseline-commit` reports nothing for uncommitted edits. Fix findings on the lines you changed, and report older findings in those files without fixing them. A clean scan does not cover the `get_query` and `has_permission` points above.
 
 ## Tests
 
