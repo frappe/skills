@@ -22,6 +22,8 @@ pilot frappe --site SITE migrate
 
 `migrate`, `execute`, and tests need the Redis that `pilot dev start` runs.
 
+Stop a bench with `pilot stop` in its checkout, which leaves other benches running. `pkill -f "pilot dev start"` kills every dev bench on the machine.
+
 `pilot dev start` on a frappe-ui app regenerates `frontend/src/types/doctypes.ts`. Keep that file out of commits unless the change is intended.
 
 Code is done when you have run it on that site, as a user with the right role, and scanned the files you changed as described under [Code](#code). Report the scan result.
@@ -54,7 +56,7 @@ The site is ready when you can log in and the app's own page loads in a browser,
 
 After new commits, run `pilot dev setup` again. It installs requirements, migrates, and rebuilds. Pilot never pulls or switches branches in a linked app.
 
-To remove the test site, stop `pilot dev start`, run `pilot --yes dev drop`, then run `git worktree remove --force ../<app>-pr<N>` from the main checkout. Ask before you drop a site or bench you did not create.
+To remove the test site, run `pilot stop`, then `pilot --yes dev drop`, then run `git worktree remove --force ../<app>-pr<N>` from the main checkout. Ask before you drop a site or bench you did not create.
 
 ## Serve a site on another hostname
 
