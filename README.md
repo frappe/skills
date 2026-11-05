@@ -6,7 +6,7 @@ A collection of agent skills for building [Frappe Framework](https://frappeframe
 
 | Skill | What it covers |
 | ----- | -------------- |
-| `frappe-app-dev` | Frappe conventions and gotchas: DocTypes, controllers, APIs, database, hooks, permissions, jobs, and tests. Also Pilot benches, and getting a test site ready for a PR |
+| `frappe-app-dev` | How to run and change Frappe apps with Pilot: benches, a test site for a PR, tests, and the Frappe behaviors agents get wrong |
 | `frappe-code-review` | Review checklist for Frappe applications: correctness, security, performance, concurrency, readability, API design, and testing |
 | `code-style` | General code style rules |
 | `technical-writing` | Write documentation, READMEs, commits, pull requests, and release notes in Simplified Technical English |
