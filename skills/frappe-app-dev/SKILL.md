@@ -36,23 +36,37 @@ To set up a new bench for several apps, or to change Frappe itself, run `pilot n
 
 ## Test site for a PR
 
-`pilot dev setup` on a worktree of the PR gives it a bench of its own, whichever layout you use day to day: Frappe `develop`, SQLite, and `Administrator` / `admin` in about 4 minutes.
+Give the PR a bench of its own, so your work stays as it is. Check the PR's base branch first: `gh pr view <N> --json baseRefName`. Frappe `develop` fits a `develop` base. For a `version-N` base, use Frappe `version-N`. Use MariaDB when the PR touches raw SQL, and SQLite otherwise. The Frappe branch and the database are fixed once the bench exists.
+
+**The app runs alone.** Use a bench per app (about 4 minutes):
 
 ```sh
 cd <app checkout>
 git worktree add --detach <WT>       # WT: a new folder outside any bench, such as ~/worktrees/<app>-pr<N>
 cd <WT>
 gh pr checkout <N> --detach
-gh pr view <N> --json baseRefName   # base is version-N? add --frappe-branch version-N below
-pilot dev setup                       # add --database mariadb when the PR touches raw SQL
+pilot dev setup                       # add --frappe-branch version-N or --database mariadb if needed
 pilot dev info
 ```
 
-The Frappe branch and the database are fixed once the bench exists. Then trim and start the bench as described in [Run the app you are changing](#run-the-app-you-are-changing).
+**The app needs other apps, or you work in a bench with several apps.** Make a new bench with all of them (about 6 minutes for one app). Benches live in `benches/` in the Pilot folder, such as `~/pilot/benches/<B>`.
+
+```sh
+pilot new <B> --frappe-branch develop --database sqlite   # or version-N, or leave out --database for MariaDB
+pilot -b <B> init
+pilot -b <B> get-app <repo URL>                     # once for each app the PR's app needs
+pilot -b <B> get-app <PR app repo URL> --skip-assets
+cd ~/pilot/benches/<B>/apps/<app>
+gh pr checkout <N> --detach
+pilot -b <B> build --apps <app>
+pilot -b <B> new-site <B>.localhost --apps <apps> --admin-password admin
+```
+
+Then trim and start the bench as described in [Run the app you are changing](#run-the-app-you-are-changing).
 
 - **Ready:** you can log in, and the app's own page loads in a browser, such as `/g` for Gameplan. `ping` and login pass even when the frontend is missing. Hand over the URL and the login.
-- **New commits:** run `pilot dev setup` again. It installs requirements, migrates, and rebuilds. Pilot never pulls or switches branches in a linked app.
-- **Remove:** run `pilot stop`, then `pilot --yes dev drop`, then `git worktree remove --force <WT>` from the main checkout. Ask before you drop a site or bench you did not create.
+- **New commits:** in a bench per app, run `pilot dev setup` again. It installs requirements, migrates, and rebuilds, but never pulls or switches branches in a linked app. In a bench with several apps, run `gh pr checkout <N> --detach` in `apps/<app>`, then `pilot -b <B> build --apps <app>` and `migrate`.
+- **Remove:** run `pilot stop` first. In a bench per app, run `pilot --yes dev drop`, then `git worktree remove --force <WT>` from the main checkout. In a bench with several apps, run `pilot -y -b <B> drop-site <site> --no-backup`, then `pilot -y -b <B> drop`. Ask before you drop a site or bench you did not create.
 
 ## Serve a site on another hostname
 
