@@ -14,41 +14,45 @@ Code is done when you have run it on the app's site as a user with the right rol
 
 ## Run the app you are changing
 
-Every app checkout gets its own bench. Work there, and leave other benches and their Python alone.
+Work in the bench your checkout already uses, and leave other benches and their Python alone. Pilot supports two layouts:
 
-1. In the checkout, run `pilot dev info` to see the bench and the site URL. No bench yet? Run `pilot dev setup`.
-2. Turn off what you do not need. An idle bench uses about 3.8 GB by default, and about 450 MB with both of these:
+- **Bench with several apps:** the checkout sits in a bench's `apps/` folder, next to `frappe`. Pilot commands run anywhere inside the bench folder use that bench. Here `pilot dev info` reports "no bench yet" and suggests `pilot dev setup`. Ignore that, and use the bench you are in.
+- **Bench per app:** the checkout is a standalone repository, and `pilot dev setup` made a bench for it, with the app linked in. In the checkout, `pilot dev info` shows that bench and the site URL. No bench yet? `pilot dev setup` creates one.
+
+Then:
+
+1. Turn off what you do not need. An idle bench uses about 3.8 GB by default, and about 450 MB with both of these:
    - Set `watch_apps_js = false` under `[bench]` in `bench.toml` (2.8 GB), unless you are changing Frappe or Desk bundles.
    - Run `pilot processes disable frappe-flow_server` (200 MB), unless you need Frappe's AI chat.
-3. Run `pilot dev start`. It stays in the foreground, so run it in a way that outlives your session. `migrate`, `execute`, and tests need the Redis it runs.
-4. Run `pilot frappe --site SITE migrate`.
+2. Start the bench: `pilot start` in a bench with several apps, `pilot dev start` in a standalone checkout. Both stay in the foreground, so run them in a way that outlives your session. `migrate`, `execute`, and tests need the Redis they run.
+3. Run `pilot frappe --site SITE migrate`. `ls sites` in the bench lists the sites.
 
 While you work:
 
-- `pilot stop` in the checkout stops that bench and leaves other benches running.
+- `pilot stop` in the bench or checkout stops that bench and leaves other benches running.
 - On a frappe-ui app, `pilot dev start` regenerates `frontend/src/types/doctypes.ts`. Keep that file out of commits unless the change is intended.
 
-To change Frappe itself or several apps together, use `pilot new NAME --frappe-branch BRANCH`, `pilot -b NAME init`, and `pilot -b NAME new-site`. `pilot new` defaults to `version-16` and MariaDB, while `pilot dev setup` defaults to `develop` and SQLite.
+To set up a new bench for several apps, or to change Frappe itself, run `pilot new NAME --frappe-branch BRANCH`, `pilot -b NAME init`, `pilot -b NAME get-app <repo URL>` for each app, and `pilot -b NAME new-site SITE --apps <apps>`. For one app, `pilot dev setup` in its checkout is quicker. `pilot new` defaults to `version-16` and MariaDB, while `pilot dev setup` defaults to `develop` and SQLite.
 
 ## Test site for a PR
 
-`pilot dev setup` on a worktree of the PR gives Frappe `develop`, SQLite, and `Administrator` / `admin` in about 4 minutes.
+`pilot dev setup` on a worktree of the PR gives it a bench of its own, whichever layout you use day to day: Frappe `develop`, SQLite, and `Administrator` / `admin` in about 4 minutes.
 
 ```sh
 cd <app checkout>
-git worktree add --detach ../<app>-pr<N>
-cd ../<app>-pr<N>
+git worktree add --detach <WT>       # WT: a new folder outside any bench, such as ~/worktrees/<app>-pr<N>
+cd <WT>
 gh pr checkout <N> --detach
 gh pr view <N> --json baseRefName   # base is version-N? add --frappe-branch version-N below
 pilot dev setup                       # add --database mariadb when the PR touches raw SQL
 pilot dev info
 ```
 
-The Frappe branch and the database are fixed once the bench exists. Then start the bench as described in [Run the app you are changing](#run-the-app-you-are-changing).
+The Frappe branch and the database are fixed once the bench exists. Then trim and start the bench as described in [Run the app you are changing](#run-the-app-you-are-changing).
 
 - **Ready:** you can log in, and the app's own page loads in a browser, such as `/g` for Gameplan. `ping` and login pass even when the frontend is missing. Hand over the URL and the login.
 - **New commits:** run `pilot dev setup` again. It installs requirements, migrates, and rebuilds. Pilot never pulls or switches branches in a linked app.
-- **Remove:** run `pilot stop`, then `pilot --yes dev drop`, then `git worktree remove --force ../<app>-pr<N>` from the main checkout. Ask before you drop a site or bench you did not create.
+- **Remove:** run `pilot stop`, then `pilot --yes dev drop`, then `git worktree remove --force <WT>` from the main checkout. Ask before you drop a site or bench you did not create.
 
 ## Serve a site on another hostname
 
