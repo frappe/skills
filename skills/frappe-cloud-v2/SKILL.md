@@ -1,6 +1,6 @@
 ---
 name: frappe-cloud-v2
-description: Create and manage Frappe Cloud v2 servers from a shell: sign in to Central (dashboard.frappe.io), create a VM, open its Pilot bench, create a site, install apps such as Builder, and get an Administrator API key. Use when a task needs a Cloud v2 VM or site, or has to drive Central or Pilot without the dashboard.
+description: Create and manage Frappe Cloud v2 servers from a shell: sign in to Central (dashboard.frappe.io), create a Frappe VM or a plain Ubuntu box to SSH into, open its Pilot bench, create a site, install apps such as Builder, and get an Administrator API key. Use when a task needs a Cloud v2 VM, devbox or site, or has to drive Central or Pilot without the dashboard.
 ---
 
 # Frappe Cloud v2
@@ -30,8 +30,10 @@ Done when it prints `signed in as <email>`.
 
 ```sh
 $CLOUD teams
-$CLOUD options --team TEAM         # regions, image, plans with monthly prices, billing profile
+$CLOUD options --team TEAM [--offering ubuntu]   # regions, images, plans with monthly prices, billing profile
 ```
+
+The default offering `pilot` is a Frappe bench; `ubuntu` is a plain VM (a devbox). For Ubuntu, `options` lists every release; pick one with `create --image`.
 
 A VM is billed: confirm the team, region, plan and monthly price with the user. An incomplete billing profile blocks creation; the team owner fills it at dashboard.frappe.io → Billing → Add billing details. A card is needed only when `options` says a payment method is required.
 
@@ -43,9 +45,11 @@ Done when the user approved a team and plan, and `options` reports a complete bi
 $CLOUD create --team TEAM --title "Title" --plan PLAN [--region REGION]
 ```
 
+For a plain Ubuntu VM add `--offering ubuntu --image IMAGE --ssh-key ~/.ssh/KEY.pub` (root's authorized key; repeatable). Steps 4 and 5 are for Frappe servers only.
+
 Re-running with the same team and title reuses the request key, so a retry never creates a second server.
 
-Done when it prints the server id and its Pilot gateway URL.
+Done when it prints the server id and its Pilot gateway URL, or for Ubuntu an ssh command that logs in. A VM without a public address has only a private IPv6 that other VMs in its region reach: pass `--via HOST` (one you can already ssh to) to get `ssh -J HOST root@IPV6`; `$CLOUD ssh --team TEAM --server SERVER --via HOST` prints it again later.
 
 ### 4. Site and apps
 

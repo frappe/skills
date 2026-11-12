@@ -12,7 +12,7 @@ A collection of agent skills for building [Frappe Framework](https://frappeframe
 | `technical-writing` | Write documentation, READMEs, commits, pull requests, and release notes in Simplified Technical English |
 | `ui-design` | General UI/UX design principles |
 | `review-ui-states` | Map every screen and UI state of a web app as state machines, screenshot each state with Playwright, and publish a pan-and-zoom review canvas on claude.ai where people pin comments that the agent reads back and fixes in bulk |
-| `frappe-cloud-v2` | Frappe Cloud v2 from a shell: sign in to Central (dashboard.frappe.io), create a VM, open its Pilot bench, create a site, install apps such as Builder, and get an Administrator API key |
+| `frappe-cloud-v2` | Frappe Cloud v2 from a shell: sign in to Central (dashboard.frappe.io), create a Frappe VM or a plain Ubuntu box to SSH into, open its Pilot bench, create a site, install apps such as Builder, and get an Administrator API key |
 | `draft-security-advisory` | Write a publication-ready GitHub Security Advisory (GHSA) from a vulnerability report — Summary, Details, Proof of concept, and Impact fields, CVSS, CWE, versions, credits. User-invoked only: run `/draft-security-advisory` |
 | `deep-app-audit` | Multi-agent audit of a Frappe app for security, correctness, and customization defects. Every candidate is verified, and the result is one report. A script runs the tasks with any agent CLI. User-invoked only: run `/deep-app-audit <app path>` |
 | `guard-review` | Review a change with [Guard](https://github.com/frappe/guard): run `/guard-review`, or the agent runs it before every push. The agent does not push when the review has P0 findings. Needs the Guard MCP server |

@@ -3,8 +3,10 @@
     python cloud.py login EMAIL                      # emails a 6-digit code
     python cloud.py login EMAIL --code 123456        # signs in; session kept in .cloudv2/
     python cloud.py teams
-    python cloud.py options --team TEAM-XXXXX        # regions, image, plans, billing profile
+    python cloud.py options --team TEAM-XXXXX [--offering ubuntu]  # regions, images, plans, billing profile
     python cloud.py create --team T --title "Docs" --plan vm-1 [--region mumbai]
+    python cloud.py create --team T --title "Box" --plan vm-1 --offering ubuntu --ssh-key ~/.ssh/id_ed25519.pub
+    python cloud.py ssh --team T --server S [--via HOST]  # the command that reaches a plain VM
     python cloud.py bench --server server-xxxx       # Pilot admin session for the VM
     python cloud.py site --server S --name docs.mumbai.frappe.cloud
     python cloud.py app --server S --site SITE --name builder [--branch master]
@@ -114,7 +116,7 @@ def central() -> Client:
 	return client
 
 
-def method(client: Client, verb: str, name: str, **params):
+def method(client: Client, verb: str, name: str, /, **params):
 	"""Central whitelists each method for GET or POST only; the wrong verb answers 'Not permitted'."""
 	if verb == "GET":
 		query = urllib.parse.urlencode({key: value for key, value in params.items() if value is not None})
@@ -147,11 +149,11 @@ def active_regions(client: Client, team: str) -> list[dict]:
 	return regions
 
 
-def newest_pilot_image(client: Client, team: str, region: str) -> dict:
-	"""The Server picker's choice: the newest available Frappe (pilot) build without a baked site."""
-	images = method(client, "GET", "central.api.images.list_images", team=team, region=region, offering="pilot", flow="Server")["items"]
-	bench_only = [image for image in images if image["tags"].get("has_site") == "0" and image["status"] == "available"]
-	return max(bench_only, key=lambda image: image["created_at"])
+def server_images(client: Client, team: str, region: str, offering: str) -> list[dict]:
+	"""Available images, newest first. A Frappe (pilot) server takes a build without a baked site."""
+	images = method(client, "GET", "central.api.images.list_images", team=team, region=region, offering=offering, flow="Server")["items"]
+	usable = [image for image in images if image["status"] == "available" and (offering != "pilot" or image["tags"].get("has_site") == "0")]
+	return sorted(usable, key=lambda image: image["created_at"], reverse=True)
 
 
 def cmd_options(args) -> None:
@@ -159,9 +161,11 @@ def cmd_options(args) -> None:
 	regions = active_regions(client, args.team)
 	print("regions:", ", ".join(f"{r['region']} ({r['display_name']})" for r in regions))
 	region = args.region or regions[0]["region"]
-	image = newest_pilot_image(client, args.team, region)
-	print(f"image: {image['id']} {image['title']} frappe={image['tags'].get('frappe_version')} pilot={image['tags'].get('pilot_version')}")
-	plans = method(client, "GET", "central.api.images.eligible_plans", team=args.team, region=region, offering="pilot", image_id=image["id"])
+	images = server_images(client, args.team, region, args.offering)
+	for image in images:
+		versions = " ".join(f"{key}={value}" for key, value in image["tags"].items() if key.endswith("_version"))
+		print(f"image: {image['id']} {image['title']} {versions}{'  (default)' if image is images[0] else ''}")
+	plans = method(client, "GET", "central.api.images.eligible_plans", team=args.team, region=region, offering=args.offering, image_id=images[0]["id"])
 	print(f"spend: {plans['current_spend']} of {plans['max_spend']} {plans['currency']} (tier {plans['tier']})")
 	for category, rows in plans["plans"].items():
 		for row in rows:
@@ -187,31 +191,59 @@ def request_key(team: str, title: str) -> str:
 def cmd_create(args) -> None:
 	client = central()
 	region = args.region or active_regions(client, args.team)[0]["region"]
-	image = args.image or newest_pilot_image(client, args.team, region)["id"]
+	image = args.image or server_images(client, args.team, region, args.offering)[0]["id"]
+	ssh_keys = [Path(path).expanduser().read_text().strip() for path in args.ssh_key]
 	action = method(
 		client, "POST", "central.api.servers.create_server", team=args.team, region=region, title=args.title,
-		request_key=request_key(args.team, args.title), plan=args.plan, offering="pilot", image_id=image, hostname=args.hostname,
+		request_key=request_key(args.team, args.title), plan=args.plan, offering=args.offering, image_id=image,
+		hostname=args.hostname, ssh_keys=ssh_keys,
 	)  # fmt: skip
 	print("queued", action["action"])
-	while action["status"] not in ("Succeeded", "Failed"):
+	while action["status"] not in ("Succeeded", "Failed", "Timed Out"):
 		time.sleep(10)
 		action = method(client, "GET", "central.api.servers.action_status", name=action["action"])
 		print(" ", action["status"])
-	if action["status"] == "Failed":
-		sys.exit(f"creation failed: {action.get('error')}")
-	server = action["resource_id"]
-	for _ in range(60):
-		overview = method(client, "GET", "central.api.servers.server_overview", team=args.team, resource_id=server)["server"]
-		if overview["status"] == "Running" and overview.get("gateway_url"):
-			break
-		time.sleep(10)
+	if action["status"] != "Succeeded":
+		sys.exit(f"creation {action['status']}: {action.get('error')}")
+	overview = wait_running(client, args.team, action["resource_id"], needs_gateway=args.offering == "pilot")
+	if args.offering == "pilot":
+		report_pilot(args.team, overview)
 	else:
-		sys.exit(f"server {server} is still {overview['status']} after 10 minutes; run the same create again to keep waiting")
+		print(f"server {overview['resource_id']} running; reach it with:\n  {ssh_command(overview, args.via)}")
+
+
+def wait_running(client: Client, team: str, server: str, needs_gateway: bool) -> dict:
+	"""Pilot images also wait for the admin gateway; a plain VM never gets one."""
+	for _ in range(60):
+		overview = server_overview(client, team, server)
+		if overview["status"] == "Running" and (overview.get("gateway_url") or not needs_gateway):
+			return overview
+		time.sleep(10)
+	sys.exit(f"server {server} is still {overview['status']} after 10 minutes; run the same create again to keep waiting")
+
+
+def server_overview(client: Client, team: str, server: str) -> dict:
+	return method(client, "GET", "central.api.servers.server_overview", team=team, resource_id=server)["server"]
+
+
+def report_pilot(team: str, overview: dict) -> None:
 	servers = load_json("servers.json")
-	servers[server] = {"team": args.team, "gateway": overview["gateway_url"]}
+	servers[overview["resource_id"]] = {"team": team, "gateway": overview["gateway_url"]}
 	save_json("servers.json", servers)
-	print(f"server {server} running; Pilot admin at {overview['gateway_url']}")
+	print(f"server {overview['resource_id']} running; Pilot admin at {overview['gateway_url']}")
 	print(f"site names: anything under .{urllib.parse.urlparse(overview['gateway_url']).hostname.split('.', 1)[1]}")
+
+
+def ssh_command(overview: dict, via: str | None) -> str:
+	"""Without a public address a VM has only its private IPv6, which other VMs in the region reach."""
+	address = overview.get("public_ipv4") or overview.get("public_ipv6")
+	if address:
+		return f"ssh root@{address}"
+	return f"ssh -J {via or '<a VM in the same region you can ssh to>'} root@{overview['ipv6_address']}"
+
+
+def cmd_ssh(args) -> None:
+	print(ssh_command(server_overview(central(), args.team, args.server), args.via))
 
 
 # ---------------------------------------------------------------- Pilot
@@ -347,14 +379,23 @@ def main() -> None:
 	options = commands.add_parser("options")
 	options.add_argument("--team", required=True)
 	options.add_argument("--region")
+	options.add_argument("--offering", default="pilot", help="pilot (Frappe bench) or ubuntu")
 	options.set_defaults(run=cmd_options)
 	create = commands.add_parser("create")
 	for flag in ("--team", "--title", "--plan"):
 		create.add_argument(flag, required=True)
 	create.add_argument("--region")
+	create.add_argument("--offering", default="pilot", help="pilot (Frappe bench) or ubuntu")
 	create.add_argument("--image")
 	create.add_argument("--hostname")
+	create.add_argument("--ssh-key", action="append", default=[], help="public key file for root; repeatable")
+	create.add_argument("--via", help="host to jump through when the VM has no public address")
 	create.set_defaults(run=cmd_create)
+	ssh = commands.add_parser("ssh")
+	ssh.add_argument("--team", required=True)
+	ssh.add_argument("--server", required=True)
+	ssh.add_argument("--via", help="host to jump through when the VM has no public address")
+	ssh.set_defaults(run=cmd_ssh)
 	bench = commands.add_parser("bench")
 	bench.add_argument("--server", required=True)
 	bench.set_defaults(run=cmd_bench)
