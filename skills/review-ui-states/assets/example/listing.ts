@@ -1,3 +1,5 @@
+// Example from a Frappe app's Drive module: its imports and API paths are that app's.
+// Copy the shape, not the code.
 import { expect } from "@playwright/test";
 import { setup } from "xstate";
 import { fillFolder, folderPath, type FolderContent } from "../content";

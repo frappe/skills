@@ -1,6 +1,6 @@
 # Writing a flow
 
-A flow is an XState machine plus the browser steps that realise it: `enter` brings a fresh scene to the initial state, and `events[EVENT]` performs one interaction and waits for the target state. `capture.spec.ts` walks `createTestModel(machine).getShortestPaths()`, opening a new scene per path, and screenshots each state the first time a path reaches it. Read `assets/example/listing.ts` once; copy its shape.
+A flow is an XState machine plus the browser steps that realise it: `enter` brings a fresh scene to the initial state, and `events[EVENT]` performs one interaction and waits for the target state. `capture.spec.ts` walks `createTestModel(machine).getShortestPaths()`, opening a new scene per path, and screenshots each state the first time a path reaches it. Read `assets/example/listing.ts` once; copy its shape, not its imports or API paths, which belong to the example app.
 
 ## Naming states
 
@@ -46,7 +46,7 @@ Use realistic content: people with names, files called "Quarter review.pdf", not
 
 ## Running
 
-One run at a time per machine, under `flock /tmp/ui-states-capture.lock`, because runs share provisioned users and the global teardown deletes them. `UI_STATES_FLOWS=a,b` limits a run to those flows. The run writes `out/<flow>.json` and `out/<flow>/<state>.png`, and `out/index.json` with the canvas order.
+When runs share provisioned users (the example's global teardown deletes them), run one at a time per machine under a lock such as `flock /tmp/ui-states-capture.lock` (`flock` comes from util-linux; on macOS install it with Homebrew). `UI_STATES_FLOWS=a,b` limits a run to those flows. The run writes `out/<flow>.json` and `out/<flow>/<state>.png`, and `out/index.json` with the canvas order.
 
 Done means: the run passes, every non-transient state has a screenshot, and you have looked at every PNG and each shows the state its description claims. Typecheck with the e2e suite's `tsc --noEmit`.
 

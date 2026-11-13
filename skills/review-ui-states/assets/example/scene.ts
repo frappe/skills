@@ -1,3 +1,5 @@
+// Example from a Frappe app's Drive module: its imports and API paths are that app's.
+// Copy the shape, not the code.
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import type { APIRequestContext, Browser, BrowserContext, Page, Route } from "@playwright/test";

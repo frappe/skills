@@ -1,6 +1,6 @@
 ---
 name: review-ui-states
-description: Map every screen and interaction state of a web app as explicit state machines, screenshot each state with Playwright, and publish them as a pan-and-zoom review canvas where the reviewer pins comments that Claude reads back for bulk UI fixes. Use when asked to review UI states, see every screen, map flows, find implicit state machines, or build a screenshot canvas or tree of an app's screens, and when asked to act on the comments left on such a canvas.
+description: Map every screen and state of a web app as state machines, screenshot each with Playwright, and publish a review canvas on claude.ai where people pin comments. Use when asked to review the UI states or every screen of an app, find implicit state machines, or act on comments left on such a canvas.
 ---
 
 # UI states
@@ -26,12 +26,14 @@ One file per flow under `flows/`, listed in canvas order in `flows/index.ts`. Re
 
 Flows are independent, so hand them to parallel subagents, two flows each, with the brief in `references/flows.md` and the finished example flow as the pattern. Give each agent the exact run command and tell it to look at every PNG before reporting. Ask for the implicit-state-machine findings in the report; the agent that wrote the machine has just read the code that should have had it.
 
-Run one flow at a time on a machine, under a lock, because runs share the provisioned users:
+Capture one flow with the env vars your config needs:
 
 ```sh
 cd <playwright folder>/ui-states
-E2E_BENCH_PATH=<bench> UI_STATES_FLOWS=<flow> flock /tmp/ui-states-capture.lock npx playwright test -c playwright.config.ts
+UI_STATES_FLOWS=<flow> npx playwright test -c playwright.config.ts
 ```
+
+When runs share provisioned users, run one flow at a time per machine under a lock; [references/flows.md](references/flows.md) has the command.
 
 A flow is done when the run passes, `out/<flow>.json` lists every state with a screenshot or a transient reason, and you have looked at every PNG in `out/<flow>/` and each shows the state its description claims. A screenshot that shows the previous state is the common failure: the event step needs an `expect` on something only the target state has.
 
@@ -53,14 +55,11 @@ Before the first publish, and after any change to `canvas/template.html`, run `n
 
 Publish `canvas.html` with the screenshots as `files` (use `root: <build dir>` and the paths from `files.json`), `icon: "map"`, and `capabilities: {"db": {}, "user": {"scopes": ["profile"]}}`. The `db` capability is where comments live; without it the page is read-only.
 
-An artifact is private to the Claude account that publishes it, so publish from the account the reviewer's browser is signed in to:
-
-- The session runs on that account: use the Artifact tool directly. If the session has no Artifact tool (some Agent SDK hosts), note that `claude -p` lacks it too but an interactive `claude` has it. Start one in a tmux session in the build dir with the publish prompt as its argument, with the parent's `CLAUDE*` environment variables unset (`CLAUDECODE`, `CLAUDE_CODE_CHILD_SESSION` and the others make it report "Not logged in"). Confirm the folder-trust prompt, then read the URL from `tmux capture-pane`.
-- The session runs on another account (its `CLAUDE_CONFIG_DIR` differs from the reviewer's): publish through `scripts/publish.sh <build dir> [url]`, which runs a headless `claude -p` with `CLAUDE_CONFIG_DIR` set to `PUBLISH_CONFIG_DIR` (default `~/.claude`). Pass the url on every later publish so the link stays the same; read comments with `scripts/comments.sh <url>`.
+An artifact is private to the Claude account that publishes it, so publish with the Artifact tool from the account the reviewer uses on claude.ai. When the session sets `CLAUDE_CONFIG_DIR` to a different account, when the user says the canvas belongs on another account, or when the session has no Artifact tool, read [references/publishing.md](references/publishing.md).
 
 Republish to the same url whenever a lane is added or a screenshot changes; comments key on `flow/state`, so they survive. Confirm the file count with a `scope: "files"` listing after a publish that added screenshots.
 
-To let teammates comment, share the artifact from claude.ai with the access level above "can comment", the one that lets them use the page. Comments on the canvas are writes to the artifact's database, which "can comment" access does not allow: those people see the page but cannot add comments.
+To let teammates pin comments, share the artifact from claude.ai with the access level above "can comment", the one that lets them use the page. Pins on the canvas are writes to the artifact's database, which "can comment" access does not allow: those people can see the page and use claude.ai's own artifact comments, but cannot pin comments on screenshots.
 
 Give the reviewer the link and, per flow, the number of states captured and the states marked transient with their reasons. The page itself is the report; keep the message short.
 
@@ -68,4 +67,4 @@ Give the reviewer the link and, per flow, the number of states captured and the 
 
 Each comment is a document in the `comments` collection: `flow`, `state`, `x`, `y` (fractions of the screenshot, or null for a note on the whole state), `text`, `by`, `at`, `done`, and optionally `kind`, `related` and `parent`. The reviewer either pastes the page's "Copy prompt" output or just says "fix the comments"; in the second case read the collection yourself (ArtifactData `list`, or `scripts/comments.sh`).
 
-Work through the open comments by flow. Open the screenshot and the flow's source to see what the pin points at. After fixing, recapture the flows you touched, rebuild, republish to the same url, and mark each comment `done: true` (ArtifactData `update` with its `if_version`, or `scripts/mark-done.sh <url> <ids…>` when the session is not on the publishing account). [references/review-loop.md](references/review-loop.md) has the comment fields, the prompt format and the edge cases.
+Work through the open comments by flow. Open the screenshot and the flow's source to see what the pin points at. After fixing, recapture the flows you touched, rebuild, republish to the same url, and mark each comment `done: true` (ArtifactData `update` with its `if_version`, or `scripts/mark-done.sh <url> <ids…>` when the session is not on the publishing account; see [references/publishing.md](references/publishing.md)). [references/review-loop.md](references/review-loop.md) has the comment fields, the prompt format and the edge cases.
