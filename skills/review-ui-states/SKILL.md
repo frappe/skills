@@ -59,7 +59,7 @@ An artifact is private to the Claude account that publishes it, so publish with 
 
 Republish to the same url whenever a lane is added or a screenshot changes; comments key on `flow/state`, so they survive. Confirm the file count with a `scope: "files"` listing after a publish that added screenshots.
 
-To let teammates pin comments, share the artifact from claude.ai with the access level above "can comment", the one that lets them use the page. Pins on the canvas are writes to the artifact's database, which "can comment" access does not allow: those people can see the page and use claude.ai's own artifact comments, but cannot pin comments on screenshots.
+To let teammates pin comments, share the artifact from claude.ai with Contributor access or higher. Pins on the canvas are writes to the artifact's database, which Viewer and Commenter access do not allow: those people can see the page and use claude.ai's own artifact comments, but cannot pin comments on screenshots.
 
 Give the reviewer the link and, per flow, the number of states captured and the states marked transient with their reasons. The page itself is the report; keep the message short.
 
