@@ -13,7 +13,7 @@ URL=${2:-}
 CONFIG_DIR=${PUBLISH_CONFIG_DIR:-$HOME/.claude}
 CLAUDE_BIN=${CLAUDE_CODE_EXECPATH:-$(command -v claude)}
 
-FILES=$(python3 -c "import json;print(json.dumps(json.load(open('$BUILD_DIR/files.json'))))")
+FILES=$(python3 -c 'import json, sys; print(json.dumps(json.load(open(sys.argv[1]))))' "$BUILD_DIR/files.json")
 URL_PART=""
 [ -n "$URL" ] && URL_PART="First call Artifact with action 'read' on url '$URL'. Then publish with url '$URL', "
 

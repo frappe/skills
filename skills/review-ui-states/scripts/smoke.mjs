@@ -1,12 +1,12 @@
 // Serves a built canvas, walks a few arrow keys in the lightbox and screenshots the result.
-// Run from the repo's Playwright folder so `playwright` resolves:
+// Run from the repo's Playwright folder so `@playwright/test` resolves:
 //   node <skill>/scripts/smoke.mjs <build dir> <flow> <state> [ArrowRight ArrowDown ...]
 import { spawn } from "node:child_process";
 import { createRequire } from "node:module";
 import { resolve } from "node:path";
 
-// Resolve playwright from where the command runs, so the script can live outside the repo.
-const { chromium } = createRequire(resolve(process.cwd(), "smoke.js"))("playwright");
+// Resolve @playwright/test from where the command runs, so the script can live outside the repo.
+const { chromium } = createRequire(resolve(process.cwd(), "smoke.js"))("@playwright/test");
 
 const [dir, flow, state, ...keys] = process.argv.slice(2);
 if (!dir || !flow || !state) { console.error("usage: smoke.mjs <build dir> <flow> <state> [keys…]"); process.exit(2); }

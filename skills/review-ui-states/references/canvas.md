@@ -38,4 +38,4 @@ Pins are fractions of the screenshot, stored in the artifact's `comments` collec
 node scripts/smoke.mjs <build dir> <flow> <state> [keys…]
 ```
 
-It serves the build dir, opens the lane, clicks the state, presses the keys (default: Right, Down, Left) and prints where each landed plus any page errors; `smoke-lightbox.png` and `smoke-canvas.png` land beside the build dir. Run it from the repo's Playwright folder so `playwright` resolves, and look at both PNGs: the lightbox with every control visible, the canvas with the current card ringed.
+It serves the build dir, opens the lane, clicks the state, presses the keys (default: Right, Down, Left) and prints where each landed plus any page errors; `smoke-lightbox.png` and `smoke-canvas.png` land beside the build dir. Run it from the repo's Playwright folder so `@playwright/test` resolves, and look at both PNGs: the lightbox with every control visible, the canvas with the current card ringed.
