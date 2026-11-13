@@ -11,6 +11,7 @@ A collection of agent skills for building [Frappe Framework](https://frappeframe
 | `code-style` | General code style rules |
 | `technical-writing` | Write documentation, READMEs, commits, pull requests, and release notes in Simplified Technical English |
 | `ui-design` | General UI/UX design principles |
+| `review-ui-states` | Map every screen and UI state of a web app as state machines, screenshot each state with Playwright, and publish a pan-and-zoom review canvas on claude.ai where people pin comments that the agent reads back and fixes in bulk |
 | `draft-security-advisory` | Write a publication-ready GitHub Security Advisory (GHSA) from a vulnerability report — Summary, Details, Proof of concept, and Impact fields, CVSS, CWE, versions, credits. User-invoked only: run `/draft-security-advisory` |
 | `deep-app-audit` | Multi-agent audit of a Frappe app for security, correctness, and customization defects. Every candidate is verified, and the result is one report. A script runs the tasks with any agent CLI. User-invoked only: run `/deep-app-audit <app path>` |
 | `ship-it` | Take finished work to a merge-ready PR: confirm the intent, review with fresh subagents, test the change live, fix docs and lint, open the PR with evidence, and watch CI and review bots. User-invoked only: run `/ship-it` |
@@ -40,6 +41,6 @@ Skills are matched by the `name` field in each `SKILL.md` frontmatter, and live 
 
 ## Usage
 
-Most skills activate automatically when you ask your agent about a matching task. Examples: create a DocType, build a Vue SPA, or run `bench migrate` (`frappe-app-dev`), review a diff (`frappe-code-review`), write a commit message (`technical-writing`), or lay out a page (`ui-design`).
+Most skills activate automatically when you ask your agent about a matching task. Examples: create a DocType, build a Vue SPA, or run `bench migrate` (`frappe-app-dev`), review a diff (`frappe-code-review`), write a commit message (`technical-writing`), lay out a page (`ui-design`), or review every screen of an app (`review-ui-states`).
 
 Some skills only run when you call them. Run `/draft-security-advisory`, `/deep-app-audit`, or `/ship-it` to start them.

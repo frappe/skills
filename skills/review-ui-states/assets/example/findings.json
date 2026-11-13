@@ -1,0 +1,130 @@
+{
+	"listing": [
+		{
+			"title": "The listing phase is a v-if chain, not a value.",
+			"detail": "FilesListing.vue picks blank, failed, empty, skeleton rows or real rows from four signals read in order: isBlank (the 180 ms timer in listSkeleton.ts), loading, query.error and query.rows.length. No name exists for the phase, so a new branch (stale while offline, say) has to be fitted into the chain by hand and tests cannot assert the phase directly.",
+			"fix": "Derive one `phase` union ('blank' | 'skeleton' | 'failed' | 'empty' | 'rows') next to the listing and render from it. The machine in flows/listing.ts is that union with its transitions."
+		},
+		{
+			"title": "What counts as 'the same place' is a hand-joined string of five refs.",
+			"detail": "FilesPage.vue builds the key for heldWhileRearranging by joining destination, parentId, isSearching, trashRoot and the type query, and a separate Proxy picks between childListing and viewListing on isSearching plus concreteDestination. Two places decide what the listing is of, and they can disagree.",
+			"fix": "Introduce a `Place` value (destination, parent, search, types) with a `key` getter; use it for the query choice and for the held-rows key."
+		},
+		{
+			"title": "A filter change restarts the skeleton; a sort or search-term change holds the rows.",
+			"detail": "Because the type query is part of the held-rows key, switching Images to Videos empties the listing to a skeleton, while re-sorting or retyping a search keeps the old rows until the new ones land. heldRows.ts documents the second behaviour as the intent for 'another arrangement'.",
+			"fix": "Decide once whether a type filter is an arrangement or a new place, and move that decision into Place so both paths agree."
+		}
+	],
+	"places": [
+		{
+			"title": "A query that is switched off looks the same as one that is loading.",
+			"detail": "FilesPage.vue builds the listing query from parentId and the trash root; when the Organization root is missing (parentId '') or the Trash root is not there yet (line ~602 returns false) the query never runs and its status stays 'pending'. 'Loading', 'not applicable' and 'empty' are then one value, which is why Organization shows skeleton rows forever on a site without that root.",
+			"fix": "Model the place as resolvingRoot | noRoot | loading | failed | empty | rows, so noRoot is its own screen with its own copy instead of an endless skeleton."
+		},
+		{
+			"title": "trashTabs guesses before the roots are known.",
+			"detail": "FilesPage.vue:563 returns !discovered.error while the roots are still loading, so Trash can render tabs and then take them away once the roots arrive without an Organization root.",
+			"fix": "Derive the tabs from the same resolvingRoot | noRoot state; render nothing until the roots are known."
+		}
+	],
+	"selection": [
+		{
+			"title": "Selection, the context menu target and the marquee are three owners of 'what is highlighted'.",
+			"detail": "FilesPage.vue keeps selectionState {selected, anchor} (line ~336), contextOpen/contextRow (~340) that highlight a row through menuTarget, and useMarquee's own box and gesture. Two rows can be highlighted at once for different reasons, and the marquee and the menu are both started from the same pane with nothing saying they exclude each other.",
+			"fix": "One selection state: idle | focused | selecting{ids, anchor} | dragging{box, prior} | menu{target: row | selection | pane}, with menu and dragging mutually exclusive."
+		},
+		{
+			"title": "Building a menu changes the selection.",
+			"detail": "itemContextOptions (FilesPage.vue:1307) calls clearSelected() while computing the options for a right-click outside the current selection, so opening a menu is a write. The selection setter (line 402) also resets the Shift-click anchor to the last id, so a marquee or Select all silently moves the anchor.",
+			"fix": "Let the menu's contents come from the menu state (target: row | selection | pane); keep the anchor only when the user sets it with a click."
+		},
+		{
+			"title": "The same one-row selection offers two different action sets.",
+			"detail": "With one row selected, the right-click menu is the full row menu (Rename, Share, …) while the toolbar shows the four bulk actions. nodeActions.ts decides per row; the toolbar decides per selection.",
+			"fix": "Derive both from one `actionsFor(selection)` so a single selected row gets the same commands everywhere."
+		}
+	],
+	"trash": [
+		{
+			"title": "A trash action's progress is three flags, and the confirm step is none of them.",
+			"detail": "useTrashActions.ts:44 folds restoring, purging and emptying into one `pending`; while a confirm dialog is open (lines ~123 and ~151) pending is false, so nothing records that a decision is waiting. Restore is really a sequence (request, destination dialog, second request or Cancel), and Cancel is reported as items failed.",
+			"fix": "One action state: idle | confirming | running | choosingDestination | done{outcome, verb} | failed{retry}."
+		},
+		{
+			"title": "Outcome and verb are separate refs, and the batch outcome is a third one.",
+			"detail": "show() (useTrashActions.ts:186) writes `outcome` and `verb` together, but runEmpty clears only outcome (line 165) and leaves verb behind. FilesPage.vue:184 shows `trash.outcome ?? batchOutcome`, so a trash result silently hides a move result when both are set.",
+			"fix": "Carry outcome and verb in one object, and make the page's outcome banner a single slot that the last finished action owns."
+		}
+	],
+	"settings": [
+		{
+			"title": "Loading and failure are negatives of each other, repeated per component.",
+			"detail": "StorageMeter.vue:54 derives `failed` from two query statuses and treats loading as 'not failed and no data'; on failure it renders nothing and offers no retry. StatisticsSettings.vue repeats the same data/failed pair in three v-if chains, so the sidebar bar turns amber near the quota while the Statistics bar stays neutral.",
+			"fix": "One shared usage state (loading | failed | loaded{level: ok | near | full}) that both the meter and Statistics render from."
+		},
+		{
+			"title": "The WebDAV answer is fetched twice to decide one tab.",
+			"detail": "settingsGroup.ts:6 holds a session-long copy to decide whether External access shows, and ExternalAccessSettings.vue:113 fetches its own; the tab's existence and its content can disagree.",
+			"fix": "External access as one state (hidden | off | connected) from one query, shared by the group list and the panel."
+		}
+	],
+	"upload": [
+		{
+			"title": "The tracker's screen is the entry list plus five loose flags.",
+			"detail": "queue.ts:163 keeps halted, preparing, seen, trackerOpen and showDone beside the UploadState entries, and the shell indicator (queue.ts ~190) is derived from all of them. closeTracker (queue.ts:901) keeps failed entries while seen stays true, so a failed upload can exist with nothing on screen leading back to Retry (the failedHidden state). seen has two writers: reveal() opens the tracker without setting it, UploadTracker.vue sets it on mount.",
+			"fix": "Tracker states: hidden | open | closedRunning | closedNeedsAttention | closedDone{timer} | preparing | asking | paused. 'Needs attention' is computed from failed or interrupted entries the user has not seen; the UploadState enum stays as it is for the rows."
+		},
+		{
+			"title": "'Creating folders…' shows behind an unanswered question.",
+			"detail": "preparing is incremented (queue.ts ~318) before the folder-collision dialog resolves, so the tracker reports progress while the queue is actually waiting for the user.",
+			"fix": "An explicit asking state that precedes preparing."
+		}
+	],
+	"preview": [
+		{
+			"title": "'Refused' is the absence of a session, not a state.",
+			"detail": "DocumentHost.vue:89 computes refused, and the branch at line 264 is also reached when session is null; the trailing 'No preview' branch is only reachable with a session and no surface. The screen is picked by loading, locked, error, refused, surface and session checked in order (lines ~250-280).",
+			"fix": "opening{title} | failed{message} | locked | refused | viewing{kind} | empty | replacing | replaced, with refused set by the open result rather than inferred."
+		},
+		{
+			"title": "An empty text file is a text viewer with no Download.",
+			"detail": "FilePreviewSurface.vue checks preview.kind === 'text' (line 397) before empty (line 405), so an empty .txt shows the text viewer, while the header hides Download for empty files (line ~368).",
+			"fix": "Make empty a state decided before the kind, used by the header and the surface alike."
+		},
+		{
+			"title": "The edited note can never show for a file.",
+			"detail": "DocumentHeader.vue:258 shows the note only when a saveState is passed, and the file preview passes none; editedAt is fixed when the file opens (session.ts:157). The editedNote state is in the machine as transient for this reason.",
+			"fix": "Either pass the replace result into the header as a saveState, or drop the note from the file header."
+		}
+	],
+	"share": [
+		{
+			"title": "A reload that fails replaces a list that loaded.",
+			"detail": "useShare.ts load() writes loadError and leaves node and list in place; every write() calls load() afterwards. ShareBody.vue's v-if chain (lines 3-15) checks loadError before the list, so one failed refresh after a successful save swaps the whole dialog body for the error message and the rows disappear.",
+			"fix": "Split loading | failed (nothing loaded yet) from ready{refreshError?}; show a refresh failure as a notice above the rows that are still known."
+		},
+		{
+			"title": "Every way of losing Manage shows the same sentence.",
+			"detail": "ShareBody.vue shows 'You can no longer share this item' whenever canManage is false, whether the owner lowered their own access (ownerLostManage), a manager was demoted by someone else (managerLostManage), or the dialog was opened without Manage. The machine has two states for this body because the user's previous action differs, but the code has no value that records it.",
+			"fix": "A lostManage{reason: 'lowered own' | 'removed'} state set by the write that caused it, so the copy can say what happened and offer the matching next step."
+		},
+		{
+			"title": "The dialog's modes are four independent refs.",
+			"detail": "picked (ShareDialog.vue:90, mirrored into ShareBody), editing (row expiry or password editor), creatingLink and the discard confirm each live in their own ref. picked hides the access section (ShareBody.vue:34) without resetting editing or creatingLink, and write() clears notice and reloads after every write, so a second row's write can start while the first reload is in flight.",
+			"fix": "One dialog mode: ready | picking{count} | editingRow{key, field} | creatingLink | confirmingDiscard, with per-row idle | saving | error kept as it is."
+		}
+	],
+	"guest": [
+		{
+			"title": "Four refusals become one 'sign in' screen.",
+			"detail": "FilesPage.vue:779 watches detail and listing errors and calls guestFrame.requireSignIn() for 401, 403, 404 and 410 alike, and GuestSurface.vue keeps only a refused boolean (line 72). A link that was removed, a link that expired after the page opened and a folder the guest never had access to all render the same signInRequired body; the spec's 'never confirm a folder exists' rule explains 404, but 410 on a link the guest already saw could say the link is gone.",
+			"fix": "browsing | locked | signInRequired | linkGone{expired | removed} | notFound on the guest frame, chosen from the status and whether the link had loaded before."
+		},
+		{
+			"title": "The unlock form's wait is stored per node, but the server locks per link.",
+			"detail": "unlockForm.ts keeps pending, error and lockedUntil as three refs; message shows the countdown when waitMs is above zero and the error otherwise (line 41), and disabled is pending || waitMs > 0. The lockout deadline is saved in sessionStorage under the node id (LOCKOUT_KEY + key), so a second link to the same node inherits a countdown the server never issued for it.",
+			"fix": "idle | submitting | wrong{message} | lockedOut{until} | unlocked, keyed by the link token rather than the node."
+		}
+	]
+}
