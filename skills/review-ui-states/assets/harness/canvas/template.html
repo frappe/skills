@@ -1,0 +1,835 @@
+<meta charset="utf-8">
+<title>__APP__ UI states</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+:root {
+  --bg: #efede8; --bg-2: #f8f7f4; --surface: #ffffff; --surface-2: #f3f1ec;
+  --fg: #1e1d1a; --fg-2: #5d5a52; --fg-3: #8d897f;
+  --line: #ddd9cf; --line-2: #ccc7bb;
+  --accent: #c2410c; --accent-soft: #fde7d6; --accent-fg: #ffffff;
+  --edge: #a39e92; --edge-back: #c2410c; --hot: #2563eb; --hot-soft: #dbe7ff;
+  --ok: #2f7a4b; --ok-soft: #dcf0e2;
+  --warn: #b7791f; --warn-soft: #fbefd4;
+  --shadow: 0 1px 2px rgba(30,29,26,.08), 0 8px 24px rgba(30,29,26,.10);
+  --pin: #e11d48; --pin-fg: #ffffff; --merge: #7c3aed; --merge-soft: #ede4ff;
+  --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --sans: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --side-w: 340px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #15161a; --bg-2: #1b1c21; --surface: #23242a; --surface-2: #2a2b32;
+    --fg: #ececea; --fg-2: #a7a7a3; --fg-3: #74746f;
+    --line: #33353d; --line-2: #42444d;
+    --accent: #fb923c; --accent-soft: #3a2a1c; --accent-fg: #1a1208;
+    --edge: #6d6e76; --edge-back: #fb923c; --hot: #60a5fa; --hot-soft: #1e2a44;
+    --ok: #6cc38a; --ok-soft: #1f3327;
+    --warn: #e2b04a; --warn-soft: #3a3020;
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.35);
+    --pin: #fb7185; --pin-fg: #1a0a0f; --merge: #b794f6; --merge-soft: #2d2440;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #15161a; --bg-2: #1b1c21; --surface: #23242a; --surface-2: #2a2b32;
+  --fg: #ececea; --fg-2: #a7a7a3; --fg-3: #74746f;
+  --line: #33353d; --line-2: #42444d;
+  --accent: #fb923c; --accent-soft: #3a2a1c; --accent-fg: #1a1208;
+  --edge: #6d6e76; --edge-back: #fb923c; --hot: #60a5fa; --hot-soft: #1e2a44;
+  --ok: #6cc38a; --ok-soft: #1f3327;
+  --warn: #e2b04a; --warn-soft: #3a3020;
+  --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.35);
+  --pin: #fb7185; --pin-fg: #1a0a0f; --merge: #b794f6; --merge-soft: #2d2440;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { height: 100%; }
+body { margin: 0; background: var(--bg); color: var(--fg); font: 13px/1.45 var(--sans); overflow: hidden; }
+button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
+.app { display: grid; grid-template-columns: var(--side-w) 1fr; grid-template-rows: minmax(0, 1fr); height: 100vh; height: 100dvh; }
+
+/* ---- sidebar ---- */
+.side { display: flex; flex-direction: column; min-width: 0; min-height: 0; border-right: 1px solid var(--line); background: var(--bg-2);
+  padding-left: max(0px, env(safe-area-inset-left, 0px)); }
+.side-head { padding: 16px 16px 12px; border-bottom: 1px solid var(--line); }
+.side-head h1 { margin: 0 0 2px; font-size: 15px; font-weight: 600; letter-spacing: -.01em; text-wrap: balance; }
+.side-head .sub { color: var(--fg-2); font-size: 12px; }
+.side-head .sub code { font-family: var(--mono); font-size: 11px; }
+.tabs { display: flex; gap: 2px; padding: 8px 12px 0; }
+.tab { flex: 1; padding: 7px 10px; border-radius: 6px 6px 0 0; color: var(--fg-2); font-weight: 500; border: 1px solid transparent; border-bottom: 0; }
+.tab[aria-selected="true"] { background: var(--surface); color: var(--fg); border-color: var(--line); }
+.tab .count { margin-left: 6px; font-family: var(--mono); font-size: 11px; color: var(--fg-3); }
+.panel { flex: 1; min-height: 0; overflow: auto; border-top: 1px solid var(--line); background: var(--surface); }
+.flow-nav { list-style: none; margin: 0; padding: 8px; }
+.flow-nav button { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; width: 100%; text-align: left; padding: 8px 10px; border-radius: 6px; }
+.flow-nav button:hover { background: var(--surface-2); }
+.flow-nav .t { font-weight: 500; }
+.flow-nav .n { grid-column: 2; grid-row: 1 / span 2; align-self: center; font-family: var(--mono); font-size: 11px; color: var(--fg-3); }
+.flow-nav .d { color: var(--fg-3); font-size: 11px; font-family: var(--mono); }
+.flow-nav .badge { display: inline-block; min-width: 18px; padding: 0 5px; border-radius: 9px; background: var(--pin); color: var(--pin-fg); font: 500 10px/18px var(--mono); text-align: center; vertical-align: 1px; }
+.comment-tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 10px 12px; border-bottom: 1px solid var(--line); background: var(--surface); position: sticky; top: 0; z-index: 1; }
+.comment-tools label { display: inline-flex; gap: 6px; align-items: center; color: var(--fg-2); font-size: 12px; }
+.btn { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 6px; border: 1px solid var(--line-2); background: var(--surface); font-weight: 500; font-size: 12px; white-space: nowrap; }
+.btn:hover { background: var(--surface-2); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); }
+.btn.primary:hover { filter: brightness(1.05); }
+.btn:disabled { opacity: .5; cursor: default; }
+.comment-list { list-style: none; margin: 0; padding: 8px; display: flex; flex-direction: column; gap: 6px; }
+.c-item { display: grid; grid-template-columns: 22px 1fr auto; gap: 4px 8px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); cursor: pointer; }
+.c-item:hover { border-color: var(--line-2); background: var(--surface-2); }
+.c-item.done { opacity: .55; }
+.c-item .no { display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: var(--pin); color: var(--pin-fg); font: 500 10px var(--mono); }
+.c-item .no.state { background: var(--fg-3); color: var(--surface); }
+.c-item .where { grid-column: 2; font-family: var(--mono); font-size: 11px; color: var(--fg-2); }
+.c-item .text { grid-column: 2; white-space: pre-wrap; word-break: break-word; }
+.tag { display: inline-block; margin-right: 6px; padding: 0 6px; border-radius: 4px; font: 600 10px/16px var(--sans); text-transform: uppercase; letter-spacing: .03em; vertical-align: 1px; }
+.tag.k-fix { background: var(--hot-soft); color: var(--hot); }
+.tag.k-review { background: var(--warn-soft); color: var(--warn); }
+.tag.k-merge { background: var(--merge-soft); color: var(--merge); }
+.c-item .rel { grid-column: 2; display: flex; flex-wrap: wrap; gap: 4px; align-items: center; color: var(--fg-3); font-size: 11px; }
+.c-item .rel button { font-family: var(--mono); font-size: 11px; color: var(--fg-2); padding: 0 5px; border: 1px solid var(--line); border-radius: 4px; }
+.c-item .rel button:hover { color: var(--fg); border-color: var(--line-2); }
+.comment-tools select { font: inherit; font-size: 12px; padding: 5px 6px; border-radius: 6px; border: 1px solid var(--line-2); background: var(--surface); color: var(--fg); }
+.c-item .who { grid-column: 2; color: var(--fg-3); font-size: 11px; }
+.c-item .act { grid-column: 3; grid-row: 1 / span 3; display: flex; flex-direction: column; gap: 4px; align-items: flex-end; }
+.c-item .act button { color: var(--fg-3); font-size: 11px; padding: 2px 4px; border-radius: 4px; }
+.c-item .act button:hover { color: var(--fg); background: var(--surface-2); }
+.c-item .c-replies { grid-column: 2 / -1; list-style: none; margin: 4px 0 0; padding: 0 0 0 10px; border-left: 2px solid var(--line); display: flex; flex-direction: column; gap: 8px; cursor: default; }
+.c-item .c-reply { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; }
+.c-item .c-reply .text, .c-item .c-reply .who { grid-column: 1; }
+.c-item .c-reply .who { color: var(--fg-3); font-size: 11px; }
+.c-item .c-reply .act { grid-column: 2; grid-row: 1; }
+.c-item .reply-box { grid-column: 2 / -1; display: flex; flex-direction: column; gap: 6px; margin-top: 4px; cursor: default; }
+.c-item .reply-box textarea { font: inherit; font-size: 13px; min-height: 56px; resize: vertical; padding: 6px 8px; border-radius: 6px; border: 1px solid var(--line-2); background: var(--surface); color: var(--fg); }
+.c-item .reply-box .row { display: flex; gap: 6px; justify-content: flex-end; }
+.empty-note { padding: 24px 16px; color: var(--fg-3); text-align: center; }
+.db-note { margin: 8px 12px; padding: 8px 10px; border-radius: 6px; background: var(--warn-soft); color: var(--fg); font-size: 12px; }
+
+/* ---- stage ---- */
+.stage { position: relative; min-width: 0; overflow: hidden; }
+.toolbar { position: absolute; z-index: 5; top: 12px; left: 12px; display: flex; gap: 6px; align-items: center; padding: 6px; border-radius: 8px; background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow); }
+.toolbar .zoom { font-family: var(--mono); font-size: 11px; color: var(--fg-2); min-width: 42px; text-align: center; }
+.toolbar .hint { color: var(--fg-3); font-size: 12px; padding: 0 6px; }
+.toolbar .ib { width: 28px; height: 28px; border-radius: 6px; display: grid; place-items: center; font-weight: 600; }
+.toolbar .ib:hover { background: var(--surface-2); }
+.viewport { position: absolute; inset: 0; cursor: grab; touch-action: none;
+  background-image: radial-gradient(var(--line) 1px, transparent 1px); background-size: 24px 24px; }
+.viewport.dragging { cursor: grabbing; }
+.world { position: absolute; left: 0; top: 0; transform-origin: 0 0; will-change: transform; }
+
+.lane { position: absolute; left: 0; }
+.lane-head { position: absolute; left: 0; top: 0; display: flex; gap: 14px; align-items: baseline; flex-wrap: wrap; max-width: 1100px; }
+.lane-head h2 { margin: 0; font-size: 22px; font-weight: 600; letter-spacing: -.015em; }
+.lane-head .src { font-family: var(--mono); font-size: 11px; color: var(--fg-3); }
+.lane-head .stat { font-family: var(--mono); font-size: 11px; color: var(--fg-2); }
+.lane-head .stat .miss { color: var(--warn); }
+.findings { position: absolute; left: 0; width: 520px; }
+.findings summary { cursor: pointer; font-weight: 500; color: var(--fg-2); list-style: none; display: inline-flex; gap: 6px; align-items: center; padding: 4px 8px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface); }
+.findings summary::-webkit-details-marker { display: none; }
+.findings summary::before { content: "▸"; color: var(--fg-3); }
+.findings[open] summary::before { content: "▾"; }
+.findings ul { margin: 8px 0 0; padding: 12px 14px 12px 28px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
+.findings li { margin: 0 0 8px; max-width: 62ch; }
+.findings li:last-child { margin-bottom: 0; }
+.findings li b { font-weight: 600; }
+.findings li .fix { display: block; color: var(--fg-2); margin-top: 2px; }
+
+.edges { position: absolute; left: 0; top: 0; overflow: visible; pointer-events: none; }
+.edges path { fill: none; stroke: var(--edge); stroke-width: 1.5; }
+.edges path.back { stroke: var(--edge-back); stroke-dasharray: 5 4; }
+.edges .lbl rect { fill: var(--bg); stroke: var(--line); rx: 4; }
+.edges .lbl text { font: 500 11px var(--mono); fill: var(--fg-2); }
+.edges .lbl.back text { fill: var(--edge-back); }
+.edges .lbl.back rect { stroke: var(--edge-back); }
+.edges path.hot { stroke: var(--hot); stroke-width: 3; stroke-dasharray: none; }
+.edges .lbl.hot rect { stroke: var(--hot); fill: var(--hot-soft); }
+.edges .lbl.hot text { fill: var(--hot); }
+.card.current { border-color: var(--hot); box-shadow: 0 0 0 3px var(--hot-soft), var(--shadow); }
+
+.node { position: absolute; }
+.card { width: 100%; height: 100%; display: flex; flex-direction: column; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; box-shadow: var(--shadow); overflow: hidden; text-align: left; transition: transform .12s ease, border-color .12s; }
+.card:hover { transform: translateY(-2px); border-color: var(--line-2); }
+.card.initial { outline: 2px solid var(--accent); outline-offset: 2px; }
+.card img:not([src]) { visibility: hidden; }
+.card img { display: block; width: 100%; aspect-ratio: 16 / 10; object-fit: cover; object-position: top; border-bottom: 1px solid var(--line); background: var(--surface-2); }
+.card .cap { padding: 8px 10px 10px; display: flex; flex-direction: column; gap: 2px; min-height: 0; }
+.card .id { font: 500 12px var(--mono); }
+.card .desc { color: var(--fg-2); font-size: 11.5px; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.card .pins { position: absolute; top: 8px; right: 8px; min-width: 22px; height: 22px; padding: 0 6px; border-radius: 11px; background: var(--pin); color: var(--pin-fg); font: 500 11px/22px var(--mono); text-align: center; box-shadow: var(--shadow); }
+.pill { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 0 12px; border: 1.5px dashed var(--line-2); border-radius: 22px; color: var(--fg-2); font: 500 12px var(--mono); background: var(--bg-2); }
+.pill .tag { font: 500 10px var(--sans); text-transform: uppercase; letter-spacing: .06em; color: var(--fg-3); }
+.pill.missing { border-color: var(--warn); color: var(--warn); }
+
+/* ---- lightbox ---- */
+.lb { position: fixed; inset: 0; z-index: 50; display: grid; grid-template-columns: 1fr 320px; background: rgba(20,19,17,.72); backdrop-filter: blur(6px); }
+.lb-main { position: relative; display: grid; grid-template-rows: auto auto minmax(0, 1fr) auto auto; min-width: 0; padding: 16px max(16px, env(safe-area-inset-left, 0px)) 16px; gap: 12px; }
+.lb-bar { display: flex; gap: 12px; align-items: center; color: #fff; flex-wrap: wrap; }
+.lb-bar .flow { font: 500 12px var(--sans); color: rgba(255,255,255,.55); margin-right: 4px; white-space: nowrap; }
+.lb-desc { color: rgba(255,255,255,.75); font-size: 13px; max-width: 90ch; margin-top: -4px; }
+.lb-bar .spacer { flex: 1; }
+.crumbs { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; font: 500 12px var(--mono); color: rgba(255,255,255,.7); min-width: 0; }
+.crumbs button { color: rgba(255,255,255,.85); padding: 3px 7px; border-radius: 6px; background: rgba(255,255,255,.1); font: inherit; }
+.crumbs button:hover { background: rgba(255,255,255,.22); }
+.crumbs .cur { color: #fff; background: var(--hot); }
+.crumbs .ev { font-size: 10.5px; color: rgba(255,255,255,.55); letter-spacing: .04em; }
+.crumbs .ev::before { content: "─"; margin-right: 3px; } .crumbs .ev::after { content: "→"; margin-left: 3px; }
+.lb-nav { display: flex; flex-wrap: wrap; gap: 6px 18px; align-items: center; color: rgba(255,255,255,.7); font-size: 12px; padding: 8px 10px; border-radius: 10px; background: rgba(255,255,255,.06); min-height: 38px; }
+.lb-nav .none { color: rgba(255,255,255,.45); }
+.lb-nav .grp { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+.lb-nav .grp > span:first-child { color: rgba(255,255,255,.5); margin-right: 2px; }
+.lb-nav button { font: 500 12px var(--mono); color: #fff; padding: 4px 9px; border-radius: 6px; background: rgba(255,255,255,.12); }
+.lb-nav button:hover { background: rgba(255,255,255,.22); }
+.lb-nav button.first { outline: 1.5px solid var(--hot); }
+.lb-nav button .ev { color: rgba(255,255,255,.55); font-size: 10.5px; margin-right: 6px; letter-spacing: .04em; }
+.lb-nav button.back .ev { color: var(--edge-back); }
+.lb-nav button.pill-like { border: 1.5px dashed rgba(255,255,255,.35); background: transparent; color: rgba(255,255,255,.6); }
+.lb-bar .ib { width: 32px; height: 32px; border-radius: 8px; display: grid; place-items: center; color: #fff; background: rgba(255,255,255,.12); font-weight: 600; }
+.lb-bar .ib:hover { background: rgba(255,255,255,.22); }
+.lb-stage { display: grid; place-items: center; min-height: 0; min-width: 0; }
+.lb-shot { position: relative; max-width: 100%; }
+.lb-shot img { display: block; max-width: 100%; max-height: var(--shot-h, 60vh); border-radius: 8px; box-shadow: 0 20px 60px rgba(0,0,0,.5); cursor: crosshair; }
+.lb-shot.readonly img { cursor: default; }
+.pin { position: absolute; width: 24px; height: 24px; margin: -24px 0 0 -12px; border-radius: 12px 12px 12px 2px; background: var(--pin); color: var(--pin-fg); font: 600 11px/24px var(--mono); text-align: center; box-shadow: 0 2px 6px rgba(0,0,0,.4); cursor: pointer; transform-origin: 50% 100%; }
+.pin.k-review { background: var(--warn); color: #fff; }
+.pin.k-merge { background: var(--merge); color: #fff; }
+.pin.done { background: var(--ok); color: #fff; }
+.pin.active { transform: scale(1.2); }
+.composer { position: absolute; z-index: 2; width: 280px; padding: 10px; border-radius: 10px; background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow); }
+.composer textarea { width: 100%; min-height: 72px; resize: vertical; font: inherit; color: var(--fg); background: var(--bg-2); border: 1px solid var(--line); border-radius: 6px; padding: 8px; }
+.composer .row { display: flex; gap: 6px; justify-content: flex-end; margin-top: 8px; }
+.lb-foot { color: rgba(255,255,255,.7); font-size: 12px; display: flex; gap: 16px; flex-wrap: wrap; }
+.lb-foot kbd { font: 500 11px var(--mono); padding: 1px 5px; border-radius: 4px; background: rgba(255,255,255,.15); }
+.lb-side { background: var(--surface); border-left: 1px solid var(--line); display: flex; flex-direction: column; min-height: 0; }
+.lb-side h3 { margin: 0; padding: 14px 14px 10px; font-size: 13px; font-weight: 600; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; }
+.lb-side .comment-list { overflow: auto; flex: 1; }
+.lb-side .add-state { margin: 8px 12px; }
+
+@media (max-width: 900px) {
+  .app { grid-template-columns: 1fr; grid-template-rows: 40vh 1fr; }
+  .side { border-right: 0; border-bottom: 1px solid var(--line); padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+  .lb { grid-template-columns: 1fr; grid-template-rows: 1fr 40vh; }
+  .lb-side { border-left: 0; border-top: 1px solid var(--line); }
+  .toolbar .hint { display: none; }
+}
+</style>
+
+<div class="app">
+  <aside class="side">
+    <div class="side-head">
+      <h1>__APP__ UI states</h1>
+      <div class="sub" id="meta"></div>
+    </div>
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" id="tab-flows" aria-selected="true">Flows<span class="count" id="flow-count"></span></button>
+      <button class="tab" role="tab" id="tab-comments" aria-selected="false">Comments<span class="count" id="comment-count"></span></button>
+    </div>
+    <div class="panel" id="panel-flows"><ul class="flow-nav" id="flow-nav"></ul></div>
+    <div class="panel" id="panel-comments" hidden>
+      <div class="comment-tools">
+        <button class="btn primary" id="copy-prompt">Copy prompt</button>
+        <select id="kind-filter" aria-label="Show"><option value="">All kinds</option><option value="fix">Fix</option><option value="review">Needs review</option><option value="merge">Merge?</option><option value="none">Untagged</option></select>
+        <label><input type="checkbox" id="include-done"> include done</label>
+        <span id="copy-status" style="color:var(--fg-3);font-size:12px"></span>
+      </div>
+      <div class="db-note" id="db-note" hidden></div>
+      <ul class="comment-list" id="comment-list"></ul>
+      <div class="empty-note" id="comment-empty">No comments yet. Open a screenshot and click where something is off.</div>
+    </div>
+  </aside>
+  <main class="stage">
+    <div class="toolbar">
+      <button class="ib" id="zoom-out" title="Zoom out">−</button>
+      <span class="zoom" id="zoom-label">100%</span>
+      <button class="ib" id="zoom-in" title="Zoom in">+</button>
+      <button class="btn" id="fit">Fit</button>
+      <span class="hint">Drag to pan · ⌘/Ctrl + wheel to zoom · click a screenshot to comment</span>
+    </div>
+    <div class="viewport" id="viewport"><div class="world" id="world"></div></div>
+  </main>
+</div>
+
+<div class="lb" id="lb" hidden>
+  <div class="lb-main">
+    <div class="lb-bar">
+      <div class="crumbs" id="lb-crumbs"></div>
+      <span class="spacer"></span>
+      <button class="ib" id="lb-close" title="Close">✕</button>
+    </div>
+    <div class="lb-desc" id="lb-desc"></div>
+    <div class="lb-stage" id="lb-stage"><div class="lb-shot" id="lb-shot"><img id="lb-img" alt=""><div id="lb-pins"></div></div></div>
+    <div class="lb-nav" id="lb-nav"></div>
+    <div class="lb-foot"><span id="lb-help">Click anywhere on the screenshot to pin a comment.</span><span><kbd>→</kbd> next step · <kbd>←</kbd> back · <kbd>↑</kbd> <kbd>↓</kbd> other branch · <kbd>Esc</kbd> close</span></div>
+  </div>
+  <aside class="lb-side">
+    <h3><span>Comments on this state</span><button class="btn" id="add-state-comment">+ General note</button></h3>
+    <ul class="comment-list" id="lb-comments"></ul>
+  </aside>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dagre/0.8.5/dagre.min.js"></script>
+<script>
+const DATA = __DATA__;
+/* pack.py lists the screenshot bundles here when it packs a build; empty means plain image files. */
+const PACKED = [];
+const SHOTS = {};
+const shot = (path) => (PACKED.length ? SHOTS[path] : path);
+const srcAttr = (path) => (shot(path) ? `src="${esc(shot(path))}"` : "");
+window.__shots = (flowId, map) => {
+  Object.assign(SHOTS, map);
+  document.querySelectorAll(`img[data-shot^="${flowId}/"]`).forEach((img) => { if (SHOTS[img.dataset.shot]) img.src = SHOTS[img.dataset.shot]; });
+  if (lb.flow === flowId && !$("lb").hidden) $("lb-img").src = shot(stateOf(lb.flow, lb.state).screenshot) ?? "";
+};
+const CARD_W = 300, CARD_H = 187.5 + 58, PILL_W = 170, PILL_H = 44;
+const LANE_GAP = 140, HEAD_H = 96;
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+const stateKey = (flow, state) => `${flow}/${state}`;
+const flowsById = Object.fromEntries(DATA.flows.map((f) => [f.id, f]));
+const stateOf = (flowId, stateId) => flowsById[flowId]?.states.find((s) => s.id === stateId);
+
+$("meta").innerHTML = `${DATA.flows.length} flows · ${DATA.flows.reduce((n, f) => n + f.states.filter((s) => s.screenshot).length, 0)} screenshots` +
+  (DATA.meta.branch ? ` · <code>${esc(DATA.meta.branch)}</code>` : "") + (DATA.meta.commit ? ` <code>${esc(DATA.meta.commit.slice(0, 9))}</code>` : "");
+$("flow-count").textContent = DATA.flows.length;
+
+/* ---------- layout ---------- */
+const layout = { lanes: [], width: 0, height: 0 };
+function layoutFlows() {
+  let y = 40;
+  for (const flow of DATA.flows) {
+    const g = new dagre.graphlib.Graph({ multigraph: true });
+    g.setGraph({ rankdir: "LR", nodesep: 40, ranksep: 70, edgesep: 24, marginx: 0, marginy: 0 });
+    g.setDefaultEdgeLabel(() => ({}));
+    for (const s of flow.states) {
+      const captured = Boolean(s.screenshot);
+      g.setNode(s.id, { width: captured ? CARD_W : PILL_W, height: captured ? CARD_H : PILL_H });
+    }
+    flow.edges.forEach((e, i) => g.setEdge(e.from, e.to, { width: e.event.length * 7 + 24, height: 22, labelpos: "c" }, String(i)));
+    dagre.layout(g);
+    const nodes = Object.fromEntries(flow.states.map((s) => [s.id, g.node(s.id)]));
+    const gw = g.graph().width, gh = g.graph().height;
+    layout.lanes.push({ flow, y, nodes, width: gw, height: HEAD_H + gh });
+    layout.width = Math.max(layout.width, gw);
+    y += HEAD_H + gh + LANE_GAP;
+  }
+  layout.height = y;
+}
+
+function edgePath(a, b) {
+  const back = b.x < a.x;
+  if (!back) {
+    const x1 = a.x + a.width / 2, x2 = b.x - b.width / 2, dx = Math.max(40, (x2 - x1) / 2);
+    const p = [x1, a.y, x1 + dx, a.y, x2 - dx, b.y, x2, b.y];
+    return { d: `M${p[0]},${p[1]} C${p[2]},${p[3]} ${p[4]},${p[5]} ${p[6]},${p[7]}`, mid: bez(p, .5), back };
+  }
+  const y1 = a.y + a.height / 2, y2 = b.y + b.height / 2, drop = 70 + Math.abs(a.x - b.x) * 0.06;
+  const p = [a.x, y1, a.x, y1 + drop, b.x, y2 + drop, b.x, y2];
+  return { d: `M${p[0]},${p[1]} C${p[2]},${p[3]} ${p[4]},${p[5]} ${p[6]},${p[7]}`, mid: bez(p, .5), back };
+}
+function bez(p, t) {
+  const u = 1 - t, a = u * u * u, b = 3 * u * u * t, c = 3 * u * t * t, d = t * t * t;
+  return { x: a * p[0] + b * p[2] + c * p[4] + d * p[6], y: a * p[1] + b * p[3] + c * p[5] + d * p[7] };
+}
+
+const commentsByState = new Map();
+function renderWorld() {
+  const world = $("world");
+  world.innerHTML = "";
+  for (const lane of layout.lanes) {
+    const { flow, nodes } = lane;
+    const el = document.createElement("section");
+    el.className = "lane"; el.id = `lane-${flow.id}`;
+    el.style.top = `${lane.y}px`; el.style.width = `${lane.width}px`; el.style.height = `${lane.height}px`;
+    const captured = flow.states.filter((s) => s.screenshot).length;
+    const missing = flow.states.filter((s) => !s.screenshot && !s.transient).length;
+    el.innerHTML = `<header class="lane-head"><h2>${esc(flow.title)}</h2><span class="src">${esc(flow.source)}</span>
+      <span class="stat">${flow.states.length} states · ${captured} captured${missing ? ` · <span class="miss">${missing} not captured</span>` : ""} · ${flow.edges.length} transitions</span></header>`;
+    if (flow.findings.length) {
+      const d = document.createElement("details"); d.className = "findings"; d.style.top = "44px";
+      d.innerHTML = `<summary>${flow.findings.length} state-machine finding${flow.findings.length > 1 ? "s" : ""}</summary><ul>` +
+        flow.findings.map((f) => `<li><b>${esc(f.title)}</b> ${esc(f.detail)}${f.fix ? `<span class="fix">→ ${esc(f.fix)}</span>` : ""}</li>`).join("") + "</ul>";
+      el.appendChild(d);
+    }
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.setAttribute("class", "edges"); svg.setAttribute("width", lane.width); svg.setAttribute("height", lane.height - HEAD_H);
+    svg.style.top = `${HEAD_H}px`;
+    svg.innerHTML = `<defs><marker id="arr-${flow.id}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--edge)"/></marker>
+      <marker id="arrb-${flow.id}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--edge-back)"/></marker></defs>`;
+    for (const e of flow.edges) {
+      const a = nodes[e.from], b = nodes[e.to];
+      if (!a || !b) continue;
+      const { d, mid, back } = edgePath(a, b);
+      const w = e.event.length * 7 + 14;
+      svg.insertAdjacentHTML("beforeend", `<path class="${back ? "back" : ""}" data-edge="${esc(e.from)}>${esc(e.to)}" d="${d}" marker-end="url(#${back ? "arrb" : "arr"}-${flow.id})"/>
+        <g class="lbl ${back ? "back" : ""}" data-edge="${esc(e.from)}>${esc(e.to)}" transform="translate(${mid.x - w / 2},${mid.y - 11})"><rect width="${w}" height="22"/><text x="${w / 2}" y="15" text-anchor="middle">${esc(e.event)}</text></g>`);
+    }
+    el.appendChild(svg);
+    for (const s of flow.states) {
+      const n = nodes[s.id];
+      const node = document.createElement("div");
+      node.className = "node";
+      node.style.cssText = `left:${n.x - n.width / 2}px;top:${HEAD_H + n.y - n.height / 2}px;width:${n.width}px;height:${n.height}px`;
+      if (s.screenshot) {
+        const count = (commentsByState.get(stateKey(flow.id, s.id)) ?? []).filter((c) => !c.done).length;
+        node.innerHTML = `<button class="card ${s.id === flow.initial ? "initial" : ""}" data-flow="${flow.id}" data-state="${s.id}" title="Open ${esc(s.id)}">
+          <img ${srcAttr(s.screenshot)} data-shot="${esc(s.screenshot)}" alt="${esc(s.id)}" loading="lazy"><div class="cap"><span class="id">${esc(s.id)}</span><span class="desc">${esc(s.description)}</span></div>
+          ${count ? `<span class="pins">${count}</span>` : ""}</button>`;
+      } else {
+        node.innerHTML = `<div class="pill ${s.transient ? "" : "missing"}" title="${esc(s.description)}">${esc(s.id)}<span class="tag">${s.transient ? "transient" : "not captured"}</span></div>`;
+      }
+      el.appendChild(node);
+    }
+    world.appendChild(el);
+  }
+  world.style.width = `${layout.width + 80}px`; world.style.height = `${layout.height}px`;
+}
+function refreshPinCounts() {
+  document.querySelectorAll(".card").forEach((card) => {
+    const count = (commentsByState.get(stateKey(card.dataset.flow, card.dataset.state)) ?? []).filter((c) => !c.done).length;
+    let badge = card.querySelector(".pins");
+    if (!count) { badge?.remove(); return; }
+    if (!badge) { badge = document.createElement("span"); badge.className = "pins"; card.appendChild(badge); }
+    badge.textContent = count;
+  });
+}
+
+/* ---------- pan & zoom ---------- */
+const view = { x: 40, y: 20, s: 0.5 };
+const viewport = $("viewport"), world = $("world");
+let frame = 0;
+function applyView() {
+  if (frame) return;
+  frame = requestAnimationFrame(() => {
+    frame = 0;
+    world.style.transform = `translate(${view.x}px,${view.y}px) scale(${view.s})`;
+    $("zoom-label").textContent = `${Math.round(view.s * 100)}%`;
+  });
+}
+function zoomAt(factor, cx, cy) {
+  const ns = Math.min(2.5, Math.max(0.06, view.s * factor));
+  view.x = cx - (cx - view.x) * (ns / view.s); view.y = cy - (cy - view.y) * (ns / view.s); view.s = ns;
+  applyView();
+}
+const local = (e) => { const r = viewport.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
+viewport.addEventListener("wheel", (e) => {
+  e.preventDefault();
+  if (e.ctrlKey || e.metaKey) { if (!("GestureEvent" in window)) zoomAt(Math.exp(-e.deltaY * 0.012), ...local(e)); }
+  else { view.x -= e.deltaX; view.y -= e.deltaY; applyView(); }
+}, { passive: false });
+// Safari reports trackpad pinch as gesture events with a cumulative scale.
+let gestureScale = 1;
+viewport.addEventListener("gesturestart", (e) => { e.preventDefault(); gestureScale = 1; });
+viewport.addEventListener("gesturechange", (e) => { e.preventDefault(); zoomAt(e.scale / gestureScale, ...local(e)); gestureScale = e.scale; });
+viewport.addEventListener("gestureend", (e) => e.preventDefault());
+const pointers = new Map();
+let drag = null, pinch = null;
+viewport.addEventListener("pointerdown", (e) => {
+  if (e.target.closest(".card, .findings, a, button")) return;
+  pointers.set(e.pointerId, e); viewport.setPointerCapture(e.pointerId);
+  if (pointers.size === 2) {
+    const [a, b] = [...pointers.values()];
+    pinch = { dist: Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY), s: view.s, x: view.x, y: view.y, cx: (a.clientX + b.clientX) / 2, cy: (a.clientY + b.clientY) / 2 };
+    drag = null; return;
+  }
+  if (e.button !== 0) return;
+  drag = { x: e.clientX, y: e.clientY, vx: view.x, vy: view.y }; viewport.classList.add("dragging");
+});
+viewport.addEventListener("pointermove", (e) => {
+  if (!pointers.has(e.pointerId)) return;
+  pointers.set(e.pointerId, e);
+  if (pinch && pointers.size === 2) {
+    const [a, b] = [...pointers.values()], r = viewport.getBoundingClientRect();
+    const dist = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY), cx = (a.clientX + b.clientX) / 2, cy = (a.clientY + b.clientY) / 2;
+    const ns = Math.min(2.5, Math.max(0.06, pinch.s * dist / pinch.dist)), k = ns / pinch.s;
+    const px = pinch.cx - r.left, py = pinch.cy - r.top;
+    view.s = ns; view.x = px - (px - pinch.x) * k + (cx - pinch.cx); view.y = py - (py - pinch.y) * k + (cy - pinch.cy); applyView(); return;
+  }
+  if (drag) { view.x = drag.vx + e.clientX - drag.x; view.y = drag.vy + e.clientY - drag.y; applyView(); }
+});
+const endPointer = (e) => { pointers.delete(e.pointerId); if (pointers.size < 2) pinch = null; if (!pointers.size) { drag = null; viewport.classList.remove("dragging"); } };
+viewport.addEventListener("pointerup", endPointer);
+viewport.addEventListener("pointercancel", endPointer);
+$("zoom-in").onclick = () => zoomAt(1.25, viewport.clientWidth / 2, viewport.clientHeight / 2);
+$("zoom-out").onclick = () => zoomAt(0.8, viewport.clientWidth / 2, viewport.clientHeight / 2);
+function fit() {
+  const pad = 40, s = Math.min(2, (viewport.clientWidth - pad * 2) / (layout.width + 80), (viewport.clientHeight - pad * 2) / layout.height);
+  view.s = Math.max(0.06, s); view.x = pad; view.y = pad; applyView();
+}
+$("fit").onclick = fit;
+function goToLane(flowId) {
+  const lane = layout.lanes.find((l) => l.flow.id === flowId);
+  if (!lane) return;
+  const pad = 40;
+  view.s = Math.min(1, Math.max(0.12, (viewport.clientWidth - pad * 2) / (lane.width + 40)));
+  view.x = pad; view.y = pad - lane.y * view.s; applyView();
+}
+
+/* ---------- sidebar ---------- */
+function renderNav() {
+  $("flow-nav").innerHTML = DATA.flows.map((f) => {
+    const open = [...commentsByState.entries()].filter(([k]) => k.startsWith(`${f.id}/`)).reduce((n, [, cs]) => n + cs.filter((c) => !c.done).length, 0);
+    return `<li><button data-flow="${f.id}"><span class="t">${esc(f.title)}${open ? ` <span class="badge">${open}</span>` : ""}</span><span class="n">${f.states.filter((s) => s.screenshot).length}/${f.states.length}</span><span class="d">${esc(f.id)}</span></button></li>`;
+  }).join("");
+}
+$("flow-nav").addEventListener("click", (e) => { const b = e.target.closest("button"); if (b) { location.hash = b.dataset.flow; goToLane(b.dataset.flow); } });
+for (const name of ["flows", "comments"]) {
+  $(`tab-${name}`).onclick = () => {
+    for (const n of ["flows", "comments"]) { $(`tab-${n}`).setAttribute("aria-selected", String(n === name)); $(`panel-${n}`).hidden = n !== name; }
+  };
+}
+function route() {
+  const id = location.hash.slice(1);
+  if (flowsById[id]) goToLane(id);
+}
+window.addEventListener("hashchange", route);
+
+/* ---------- comments (db) ---------- */
+let db = null, user = null, me = null, canWrite = true, isOwner = false;
+const canDelete = (c) => canWrite && (isOwner || (me != null && c.by === me));
+let allDocs = [], comments = [], replies = new Map();
+const profilesCache = {}, replyDrafts = new Map(), replyOpen = new Set();
+function commentNumber(c) { return (commentsByState.get(stateKey(c.flow, c.state)) ?? []).indexOf(c) + 1; }
+function groupComments() {
+  commentsByState.clear();
+  replies = new Map();
+  for (const c of allDocs) {
+    if (!c.parent) continue;
+    if (!replies.has(c.parent)) replies.set(c.parent, []);
+    replies.get(c.parent).push(c);
+  }
+  for (const c of comments) {
+    const k = stateKey(c.flow, c.state);
+    if (!commentsByState.has(k)) commentsByState.set(k, []);
+    commentsByState.get(k).push(c);
+  }
+}
+async function names(ids) {
+  if (!user) return {};
+  try { return await user.profiles(ids); } catch { return {}; }
+}
+const KINDS = { fix: "Fix", review: "Needs review", merge: "Merge?" };
+const kindMatches = (c) => { const k = $("kind-filter").value; return !k || (k === "none" ? !KINDS[c.kind] : c.kind === k); };
+const whoOf = (c) => profilesCache[c.by]?.name || (c.by === me ? "you" : "Someone");
+const whenOf = (c) => c.at ? new Date(c.at).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" }) : "";
+function replyThread(c) {
+  const rs = replies.get(c.id) ?? [];
+  const list = rs.length ? `<ul class="c-replies">${rs.map((r) => `<li class="c-reply" data-reply="${esc(r.id)}">
+    <span class="text">${esc(r.text)}</span><span class="who">${esc(whoOf(r))}${whenOf(r) ? ` · ${whenOf(r)}` : ""}</span>
+    <span class="act">${canDelete(r) ? `<button data-act="delete-reply">Delete</button>` : ""}</span></li>`).join("")}</ul>` : "";
+  const box = canWrite && replyOpen.has(c.id) ? `<div class="reply-box"><textarea data-reply-to="${esc(c.id)}" placeholder="Reply…">${esc(replyDrafts.get(c.id) ?? "")}</textarea>
+    <div class="row"><button class="btn" data-act="reply-cancel">Cancel</button><button class="btn primary" data-act="reply-send">Reply</button></div></div>` : "";
+  return list + box;
+}
+function commentItem(c, { showWhere = true } = {}) {
+  const n = commentNumber(c), pinned = c.x != null;
+  const who = whoOf(c), when = whenOf(c);
+  return `<li class="c-item ${c.done ? "done" : ""}" data-id="${esc(c.id)}">
+    <span class="no ${pinned ? "" : "state"}">${pinned ? n : "·"}</span>
+    ${showWhere ? `<span class="where">${esc(c.flow)}/${esc(c.state)}${pinned ? ` @ ${Math.round(c.x * 100)}%, ${Math.round(c.y * 100)}%` : ""}</span>` : ""}
+    <span class="text">${KINDS[c.kind] ? `<span class="tag k-${c.kind}">${KINDS[c.kind]}</span>` : ""}${esc(c.text)}</span>
+    ${c.related?.length ? `<span class="rel">Also:${c.related.map((r) => `<button data-goto="${esc(r)}">${esc(r)}</button>`).join("")}</span>` : ""}<span class="who">${esc(who)}${when ? ` · ${when}` : ""}</span>
+    <span class="act">${canWrite ? `<button data-act="reply">Reply</button><button data-act="done">${c.done ? "Reopen" : "Done"}</button>${canDelete(c) ? `<button data-act="delete">Delete</button>` : ""}` : ""}</span>
+    ${replyThread(c)}</li>`;
+}
+async function renderComments() {
+  groupComments();
+  const ids = [...new Set(allDocs.map((c) => c.by).filter(Boolean))];
+  const focused = document.activeElement?.dataset?.replyTo, caret = document.activeElement?.selectionStart;
+  Object.assign(profilesCache, await names(ids));
+  const open = comments.filter((c) => !c.done).length;
+  $("comment-count").textContent = comments.length ? `${open}/${comments.length}` : "";
+  const shown = comments.filter(kindMatches);
+  $("comment-list").innerHTML = shown.map((c) => commentItem(c)).join("");
+  $("comment-empty").hidden = shown.length > 0;
+  $("comment-empty").textContent = comments.length ? "No comments of this kind." : "No comments yet. Open a screenshot and click where something is off.";
+  refreshPinCounts(); renderNav();
+  if (!$("lb").hidden) renderLightboxComments();
+  if (focused) {
+    const ta = document.querySelector(`#${$("lb").hidden ? "comment-list" : "lb-comments"} textarea[data-reply-to="${CSS.escape(focused)}"]`);
+    if (ta) { ta.focus(); ta.setSelectionRange(caret, caret); }
+  }
+}
+async function sendReply(c, ta) {
+  const text = ta.value.trim(); if (!text || !db) return;
+  ta.disabled = true;
+  try {
+    await db.collection("comments").add({ parent: c.id, flow: c.flow, state: c.state, text, by: me, at: new Date().toISOString() });
+    replyDrafts.delete(c.id); replyOpen.delete(c.id); renderComments();
+  } catch (err) { ta.disabled = false; showDbError(err); }
+}
+function onCommentAction(e) {
+  const item = e.target.closest(".c-item"); if (!item) return;
+  const c = comments.find((x) => x.id === item.dataset.id); if (!c) return;
+  const act = e.target.closest("button")?.dataset.act;
+  if (e.target.closest(".reply-box, .c-replies")) {
+    if (act === "reply-send") sendReply(c, item.querySelector(".reply-box textarea"));
+    if (act === "reply-cancel") { replyOpen.delete(c.id); replyDrafts.delete(c.id); renderComments(); }
+    if (act === "delete-reply") db?.doc(`comments/${e.target.closest("[data-reply]").dataset.reply}`).delete().catch(showDbError);
+    return;
+  }
+  if (act === "reply") {
+    const list = e.currentTarget;
+    replyOpen.add(c.id); renderComments();
+    requestAnimationFrame(() => list.querySelector(`textarea[data-reply-to="${CSS.escape(c.id)}"]`)?.focus());
+    return;
+  }
+  const go = e.target.closest("[data-goto]")?.dataset.goto;
+  if (go) { const [f, st] = go.split("/"); openLightbox(f, st); return; }
+  if (act === "done") { db?.doc(`comments/${c.id}`).update({ done: !c.done }).catch(showDbError); return; }
+  if (act === "delete" && canDelete(c)) {
+    const n = (replies.get(c.id) ?? []).length;
+    if (n && !confirm(`Delete this comment and its ${n} ${n > 1 ? "replies" : "reply"}?`)) return;
+    for (const r of replies.get(c.id) ?? []) db?.doc(`comments/${r.id}`).delete().catch(showDbError);
+    db?.doc(`comments/${c.id}`).delete().catch(showDbError); return;
+  }
+  openLightbox(c.flow, c.state, c.id);
+}
+$("comment-list").addEventListener("click", onCommentAction);
+$("kind-filter").addEventListener("change", renderComments);
+$("lb-comments").addEventListener("click", onCommentAction);
+for (const id of ["comment-list", "lb-comments"]) {
+  $(id).addEventListener("input", (e) => { const to = e.target.dataset.replyTo; if (to) replyDrafts.set(to, e.target.value); });
+  $(id).addEventListener("keydown", (e) => {
+    const to = e.target.dataset.replyTo; if (!to) return;
+    const c = comments.find((x) => x.id === to); if (!c) return;
+    if ((e.metaKey || e.ctrlKey) && e.key === "Enter") { e.preventDefault(); sendReply(c, e.target); }
+    if (e.key === "Escape") { e.stopPropagation(); replyOpen.delete(to); replyDrafts.delete(to); renderComments(); }
+  });
+}
+function showDbError(err) {
+  const note = $("db-note");
+  note.hidden = false;
+  if (err?.code === "invalid_argument") { canWrite = false; note.textContent = "You can read these comments but not change them."; renderComments(); }
+  else note.textContent = `Could not save: ${err?.message ?? err}`;
+}
+async function addComment(flow, state, x, y, text) {
+  if (!db) return;
+  await db.collection("comments").add({ flow, state, x, y, text, by: me, at: new Date().toISOString(), done: false });
+}
+async function connectDb() {
+  db = await claude.use("db"); user = await claude.use("user");
+  if (!db) {
+    canWrite = false; $("db-note").hidden = false;
+    $("db-note").textContent = "Comments are not available in this view. Open the page on claude.ai, signed in, to add them.";
+    $("lb-shot").classList.add("readonly"); $("lb-help").textContent = "Comments are read-only here."; $("add-state-comment").hidden = true;
+    return;
+  }
+  me = (await user?.id?.()) ?? null;
+  isOwner = (await user?.isOwner?.()) ?? false;
+  const w = await user?.can?.("data.write");
+  if (w === false) { canWrite = false; $("lb-shot").classList.add("readonly"); $("lb-help").textContent = "You can read comments here but not add them."; $("add-state-comment").hidden = true; }
+  const timer = setTimeout(() => { $("db-note").hidden = false; $("db-note").textContent = "Comments are taking a while to load…"; }, 10000);
+  db.collection("comments").orderBy("at").onSnapshot((snap) => {
+    if (!snap.metadata.fromCache) { clearTimeout(timer); if ($("db-note").textContent.startsWith("Comments are taking")) $("db-note").hidden = true; }
+    allDocs = snap.docs.filter((d) => d.exists).map((d) => ({ id: d.id, ...d.data() }));
+    comments = allDocs.filter((c) => !c.parent);
+    renderComments();
+  }, (err) => { clearTimeout(timer); showDbError(err); });
+}
+
+/* ---------- copy prompt ---------- */
+function promptText() {
+  const includeDone = $("include-done").checked;
+  const list = comments.filter((c) => (includeDone || !c.done) && kindMatches(c));
+  if (!list.length) return "";
+  const lines = [`__APP__ UI review: ${list.length} comment${list.length > 1 ? "s" : ""} from the UI states canvas.`,
+    "Each comment names a flow and state. The screenshot is ui-states/out/<flow>/<state>.png in the Playwright folder; a position is a percentage from the top-left of that screenshot. Flow sources are listed under each heading.", ""];
+  for (const flow of DATA.flows) {
+    const mine = list.filter((c) => c.flow === flow.id);
+    if (!mine.length) continue;
+    lines.push(`## ${flow.title} (${flow.id}) — ${flow.source}`);
+    for (const s of flow.states) {
+      const cs = mine.filter((c) => c.state === s.id);
+      if (!cs.length) continue;
+      lines.push(`### ${s.id} — ${s.screenshot ?? "no screenshot"}`, s.description ? `_${s.description}_` : "");
+      cs.forEach((c) => { lines.push(`- ${c.x != null ? `at (${Math.round(c.x * 100)}%, ${Math.round(c.y * 100)}%)` : "whole state"}${c.done ? " [done]" : ""}${KINDS[c.kind] ? ` [${KINDS[c.kind]}]` : ""}: ${c.text.replace(/\s*\n\s*/g, " ")}${c.related?.length ? ` (also: ${c.related.join(", ")})` : ""}`);
+        for (const r of replies.get(c.id) ?? []) lines.push(`  - reply from ${whoOf(r)}: ${r.text.replace(/\s*\n\s*/g, " ")}`);
+      });
+      lines.push("");
+    }
+  }
+  return lines.join("\n");
+}
+$("copy-prompt").onclick = async () => {
+  const text = promptText(), status = $("copy-status");
+  if (!text) { status.textContent = "Nothing to copy."; return; }
+  try { await navigator.clipboard.writeText(text); status.textContent = "Copied."; }
+  catch {
+    const ta = document.createElement("textarea"); ta.value = text; ta.style.cssText = "position:fixed;left:-9999px"; document.body.appendChild(ta); ta.select();
+    try { document.execCommand("copy"); status.textContent = "Copied."; } catch { status.textContent = "Select and copy from the box."; ta.style.cssText = "width:100%;height:160px;margin:8px 12px"; $("comment-tools").after(ta); return; }
+    ta.remove();
+  }
+  setTimeout(() => { status.textContent = ""; }, 2500);
+};
+
+/* ---------- lightbox ---------- */
+const lb = { flow: null, state: null, activeId: null };
+function capturedStates(flowId) { return flowsById[flowId].states.filter((s) => s.screenshot); }
+
+/* The tree is a breadth-first walk from the initial state over the flow's edges, in the order the
+   machine lists them. The first edge to reach a state is its tree edge; the others are "also" edges. */
+const trees = {};
+function treeOf(flowId) {
+  if (trees[flowId]) return trees[flowId];
+  const flow = flowsById[flowId], parent = {}, children = {}, event = {}, also = {};
+  const root = flow.initial ?? flow.states[0]?.id;
+  for (const s of flow.states) { children[s.id] = []; also[s.id] = []; }
+  // Every state nothing points at is a root too; the graph tool leaves out `always` steps, so an
+  // initial state with no edges at all is joined to the next root as one.
+  const roots = [root, ...flow.states.map((s) => s.id).filter((id) => id !== root && !flow.edges.some((e) => e.to === id))];
+  const queue = [...roots]; for (const id of roots) parent[id] = null;
+  if (roots.length > 1 && !flow.edges.some((e) => e.from === root || e.to === root)) {
+    parent[roots[1]] = root; event[roots[1]] = "always"; children[root].push(roots[1]);
+  }
+  while (queue.length) {
+    const from = queue.shift();
+    for (const e of flow.edges) {
+      if (e.from !== from) continue;
+      if (e.to in parent) { also[from].push(e); continue; }
+      parent[e.to] = from; event[e.to] = e.event; children[from].push(e.to); queue.push(e.to);
+    }
+  }
+  for (const s of flow.states) if (!(s.id in parent)) { parent[s.id] = null; }
+  return (trees[flowId] = { root, parent, children, event, also });
+}
+function pathTo(flowId, stateId) {
+  const { parent } = treeOf(flowId), path = [];
+  for (let id = stateId; id != null; id = parent[id]) path.unshift(id);
+  return path;
+}
+/* The deepest-first captured state reachable through uncaptured ones. */
+function firstCaptured(flowId, stateId) {
+  const { children } = treeOf(flowId), seen = new Set(), queue = [stateId];
+  while (queue.length) {
+    const id = queue.shift(); if (seen.has(id)) continue; seen.add(id);
+    if (stateOf(flowId, id)?.screenshot) return id;
+    queue.push(...children[id]);
+  }
+  return null;
+}
+const lastChild = {};
+function stepTree(dir) {
+  const tree = treeOf(lb.flow), id = lb.state;
+  let to = null, via = null;
+  if (dir === "down" || dir === "up") {
+    const sibs = tree.children[tree.parent[id] ?? ""] ?? [];
+    const i = sibs.indexOf(id); if (i < 0 || sibs.length < 2) return;
+    to = sibs[(i + (dir === "down" ? 1 : -1) + sibs.length) % sibs.length]; via = tree.parent[id];
+  } else if (dir === "right") {
+    const kids = tree.children[id]; if (!kids.length) return;
+    to = kids.includes(lastChild[`${lb.flow}/${id}`]) ? lastChild[`${lb.flow}/${id}`] : kids[0]; via = id;
+  } else if (dir === "left") {
+    to = tree.parent[id]; via = to;
+    while (to && !stateOf(lb.flow, to)?.screenshot) { to = tree.parent[to]; via = to; }
+  }
+  if (!to) return;
+  const landed = firstCaptured(lb.flow, to); if (!landed) return;
+  if (via != null && tree.parent[landed] === via) lastChild[`${lb.flow}/${via}`] = landed;
+  openLightbox(lb.flow, landed, null, { from: dir === "left" ? id : tree.parent[landed], pan: true });
+}
+function openLightbox(flowId, stateId, activeId = null, nav = {}) {
+  const s = stateOf(flowId, stateId); if (!s?.screenshot) return;
+  Object.assign(lb, { flow: flowId, state: stateId, activeId });
+  $("lb-img").src = shot(s.screenshot) ?? ""; $("lb-img").alt = `${flowId}/${stateId}`;
+  $("lb-desc").textContent = s.description;
+  $("lb").hidden = false; closeComposer(); renderLightboxComments(); renderLightboxNav();
+  markOnCanvas(flowId, stateId, nav.from ?? null, nav.pan === true);
+}
+function renderLightboxNav() {
+  const tree = treeOf(lb.flow), path = pathTo(lb.flow, lb.state);
+  const crumb = (id) => `<button data-go="${esc(id)}" class="${id === lb.state ? "cur" : ""}">${esc(id)}</button>`;
+  $("lb-crumbs").innerHTML = `<span class="flow">${esc(flowsById[lb.flow].title)} ›</span>` + path.map((id, i) => (i ? `<span class="ev">${esc(tree.event[id] ?? "")}</span>` : "") + crumb(id)).join("");
+  const kids = tree.children[lb.state], parent = tree.parent[lb.state];
+  const sibs = parent != null ? tree.children[parent].filter((id) => id !== lb.state) : [];
+  const btn = (id, ev, cls = "") => {
+    const captured = !!stateOf(lb.flow, id)?.screenshot, landed = captured ? id : firstCaptured(lb.flow, id);
+    const title = captured ? "" : landed ? ` title="${esc(id)} is not captured; opens ${esc(landed)}"` : ` title="${esc(id)} is not captured"`;
+    return `<button data-go="${esc(landed ?? "")}" class="${cls} ${captured ? "" : "pill-like"}"${title}>${ev ? `<span class="ev">${esc(ev)}</span>` : ""}${esc(id)}</button>`;
+  };
+  const groups = [];
+  if (kids.length) groups.push(`<span class="grp"><span>→ next</span>${kids.map((id, i) => btn(id, tree.event[id], i === 0 ? "first" : "")).join("")}</span>`);
+  else groups.push(`<span class="grp"><span>→ next</span><span class="none">end of this branch</span></span>`);
+  if (sibs.length) groups.push(`<span class="grp"><span>↕ instead</span>${sibs.map((id) => btn(id, tree.event[id])).join("")}</span>`);
+  if (tree.also[lb.state].length) groups.push(`<span class="grp"><span>↩ also</span>${tree.also[lb.state].map((e) => btn(e.to, e.event, "back")).join("")}</span>`);
+  $("lb-nav").innerHTML = groups.join("");
+}
+function markOnCanvas(flowId, stateId, from, pan) {
+  for (const el of world.querySelectorAll(".card.current, .hot")) el.classList.remove("current", "hot");
+  const lane = layout.lanes.find((l) => l.flow.id === flowId); if (!lane) return;
+  const card = world.querySelector(`.card[data-flow="${flowId}"][data-state="${stateId}"]`);
+  if (card) card.classList.add("current");
+  if (from) for (const el of $(`lane-${flowId}`).querySelectorAll(`[data-edge="${from}>${stateId}"], [data-edge="${stateId}>${from}"]`)) el.classList.add("hot");
+  if (!pan) return;
+  const n = lane.nodes[stateId]; if (!n) return;
+  view.x = viewport.clientWidth / 2 - n.x * view.s; view.y = viewport.clientHeight / 2 - (lane.y + HEAD_H + n.y) * view.s; applyView();
+}
+for (const id of ["lb-crumbs", "lb-nav"]) $(id).addEventListener("click", (e) => {
+  const b = e.target.closest("button[data-go]"); if (!b || !b.dataset.go) return;
+  const tree = treeOf(lb.flow), to = b.dataset.go, from = tree.parent[to] === lb.state ? lb.state : tree.parent[to];
+  if (tree.parent[to] === lb.state) lastChild[`${lb.flow}/${lb.state}`] = to;
+  openLightbox(lb.flow, to, null, { from: b.classList.contains("back") ? lb.state : from, pan: true });
+});
+function closeLightbox() { $("lb").hidden = true; closeComposer(); lb.flow = null; }
+new ResizeObserver(([entry]) => $("lb").style.setProperty("--shot-h", `${entry.contentRect.height}px`)).observe($("lb-stage"));
+function renderLightboxComments() {
+  if (!lb.flow) return;
+  const cs = commentsByState.get(stateKey(lb.flow, lb.state)) ?? [];
+  $("lb-pins").innerHTML = cs.filter((c) => c.x != null).map((c) =>
+    `<button class="pin ${KINDS[c.kind] ? `k-${c.kind}` : ""} ${c.done ? "done" : ""} ${c.id === lb.activeId ? "active" : ""}" style="left:${c.x * 100}%;top:${c.y * 100}%" data-id="${esc(c.id)}" title="${esc(c.text)}">${commentNumber(c)}</button>`).join("");
+  $("lb-comments").innerHTML = cs.length ? cs.map((c) => commentItem(c, { showWhere: false })).join("") : `<li class="empty-note">No comments on this state yet.</li>`;
+}
+$("lb-pins").addEventListener("click", (e) => {
+  const pin = e.target.closest(".pin"); if (!pin) return;
+  e.stopPropagation(); lb.activeId = pin.dataset.id; renderLightboxComments();
+  $("lb-comments").querySelector(`[data-id="${pin.dataset.id}"]`)?.scrollIntoView({ block: "nearest" });
+});
+$("lb-img").addEventListener("click", (e) => {
+  if (!canWrite || !db) return;
+  const r = e.currentTarget.getBoundingClientRect();
+  openComposer((e.clientX - r.left) / r.width, (e.clientY - r.top) / r.height);
+});
+$("add-state-comment").onclick = () => { if (canWrite && db) openComposer(null, null); };
+function openComposer(x, y) {
+  closeComposer();
+  const box = document.createElement("div"); box.className = "composer"; box.id = "composer";
+  box.innerHTML = `<textarea placeholder="${x == null ? "A note about this whole state…" : "What is off here?"}"></textarea><div class="row"><button class="btn" data-act="cancel">Cancel</button><button class="btn primary" data-act="save">Save</button></div>`;
+  const shot = $("lb-shot");
+  if (x == null) { box.style.cssText = "right:12px;top:12px"; }
+  else {
+    const r = shot.getBoundingClientRect(), left = Math.min(x * r.width + 14, r.width - 290), top = Math.min(y * r.height + 6, r.height - 150);
+    box.style.cssText = `left:${Math.max(0, left)}px;top:${Math.max(0, top)}px`;
+    $("lb-pins").insertAdjacentHTML("beforeend", `<span class="pin active" id="draft-pin" style="left:${x * 100}%;top:${y * 100}%">+</span>`);
+  }
+  shot.appendChild(box);
+  const ta = box.querySelector("textarea"); ta.focus();
+  const save = async () => {
+    const text = ta.value.trim(); if (!text) { closeComposer(); return; }
+    box.querySelector("[data-act=save]").disabled = true;
+    try { await addComment(lb.flow, lb.state, x, y, text); closeComposer(); } catch (err) { showDbError(err); box.querySelector("[data-act=save]").disabled = false; }
+  };
+  box.querySelector("[data-act=save]").onclick = save;
+  box.querySelector("[data-act=cancel]").onclick = closeComposer;
+  ta.addEventListener("keydown", (e) => { if ((e.metaKey || e.ctrlKey) && e.key === "Enter") save(); if (e.key === "Escape") { e.stopPropagation(); closeComposer(); } });
+}
+function closeComposer() { $("composer")?.remove(); $("draft-pin")?.remove(); }
+$("lb-close").onclick = closeLightbox;
+$("lb").addEventListener("click", (e) => { if (e.target === $("lb")) closeLightbox(); });
+document.addEventListener("keydown", (e) => {
+  if ($("lb").hidden) return;
+  if (e.target.tagName === "TEXTAREA") return;
+  if (e.key === "Escape") closeLightbox();
+  const dir = { ArrowLeft: "left", ArrowRight: "right", ArrowUp: "up", ArrowDown: "down" }[e.key];
+  if (dir) { e.preventDefault(); stepTree(dir); }
+});
+world.addEventListener("click", (e) => { const card = e.target.closest(".card"); if (card) openLightbox(card.dataset.flow, card.dataset.state); });
+
+/* ---------- boot ---------- */
+layoutFlows(); renderWorld(); renderNav();
+for (const src of PACKED) document.head.append(Object.assign(document.createElement("script"), { src, async: true }));
+if (flowsById[location.hash.slice(1)]) route(); else if (DATA.flows[0]) goToLane(DATA.flows[0].id);
+
+if (window.claude?.use) connectDb(); else { canWrite = false; $("db-note").hidden = false; $("db-note").textContent = "Comments need the claude.ai viewer."; $("lb-shot").classList.add("readonly"); $("add-state-comment").hidden = true; }
+</script>
