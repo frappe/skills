@@ -55,7 +55,7 @@ Before the first publish, and after any change to `canvas/template.html`, run `n
 
 Publish `canvas.html` with the screenshots as `files` (use `root: <build dir>` and the paths from `files.json`), `icon: "map"`, and `capabilities: {"db": {}, "user": {"scopes": ["profile"]}}`. The `db` capability is where comments live; without it the page is read-only.
 
-An artifact is private to the Claude account that publishes it, so publish with the Artifact tool from the account the reviewer uses on claude.ai. When the session sets `CLAUDE_CONFIG_DIR` to a different account, when the user says the canvas belongs on another account, or when the session has no Artifact tool, read [references/publishing.md](references/publishing.md).
+An artifact is private to the Claude account that publishes it, so publish with the Artifact tool from the account the reviewer uses on claude.ai. When the session has no Artifact tool, read [references/publishing.md](references/publishing.md).
 
 Republish to the same url whenever a lane is added or a screenshot changes; comments key on `flow/state`, so they survive. Confirm the file count with a `scope: "files"` listing after a publish that added screenshots.
 
@@ -65,6 +65,6 @@ Give the reviewer the link and, per flow, the number of states captured and the 
 
 ## 5. Act on the comments
 
-Each comment is a document in the `comments` collection: `flow`, `state`, `x`, `y` (fractions of the screenshot, or null for a note on the whole state), `text`, `by`, `at`, `done`, and optionally `kind`, `related` and `parent`. The reviewer either pastes the page's "Copy prompt" output or just says "fix the comments"; in the second case read the collection yourself (ArtifactData `list`, or `scripts/comments.sh`).
+Each comment is a document in the `comments` collection: `flow`, `state`, `x`, `y` (fractions of the screenshot, or null for a note on the whole state), `text`, `by`, `at`, `done`, and optionally `kind`, `related` and `parent`. The reviewer either pastes the page's "Copy prompt" output or just says "fix the comments"; in the second case read the collection yourself (ArtifactData `list`).
 
-Work through the open comments by flow. Open the screenshot and the flow's source to see what the pin points at. After fixing, recapture the flows you touched, rebuild, republish to the same url, and mark each comment `done: true` (ArtifactData `update` with its `if_version`, or `scripts/mark-done.sh <url> <ids…>` when the session is not on the publishing account; see [references/publishing.md](references/publishing.md)). [references/review-loop.md](references/review-loop.md) has the comment fields, the prompt format and the edge cases.
+Work through the open comments by flow. Open the screenshot and the flow's source to see what the pin points at. After fixing, recapture the flows you touched, rebuild, republish to the same url, and mark each comment `done: true` (ArtifactData `update` with its `if_version`). [references/review-loop.md](references/review-loop.md) has the comment fields, the prompt format and the edge cases.

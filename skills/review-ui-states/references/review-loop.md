@@ -24,7 +24,7 @@ A reply is a document in the same collection with `parent` set to the id of the 
 ## Getting the comments
 
 - Pasted: the page's "Copy prompt" button produces Markdown grouped by flow and state, each line `- at (63%, 48%): text` or `- whole state: text`, with the screenshot path and the flow's source file in the headings. Done comments are left out unless the reviewer ticked "include done".
-- Read directly: ArtifactData `list` on collection `comments` with the artifact url, when the session runs on the publishing account; otherwise `scripts/comments.sh <url>`.
+- Read directly: ArtifactData `list` on collection `comments` with the artifact url.
 
 ## Fixing in bulk
 
@@ -32,7 +32,7 @@ A reply is a document in the same collection with `parent` set to the id of the 
 2. For each pin, open `out/<flow>/<state>.png` and look at the position; the text is short because the pin carries the location. Read the component before deciding what "align the icon" means in code.
 3. A comment that asks for a product decision rather than a fix ("redo this with information hierarchy layout") is a design task: do it, but show the before and after in the reply, since the reviewer commented on a screenshot and will judge the result on the next one.
 4. After the fixes, recapture only the flows you touched, rebuild, republish to the same url, and look at the new screenshots for the commented states before reporting back.
-5. Mark each handled comment `done: true` with ArtifactData `update` (pass `if_version` from the read), or with `scripts/mark-done.sh <url> <ids…>` from another account. A comment you chose not to act on stays open; say why in the reply.
+5. Mark each handled comment `done: true` with ArtifactData `update` (pass `if_version` from the read). A comment you chose not to act on stays open; say why in the reply.
 
 The page marks done comments green and drops them from the copied prompt, so the next round starts from what is still open.
 
